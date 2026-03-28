@@ -1,0 +1,70 @@
+{
+  "type": "FeatureCollection",
+  "name": "ashland-demo-neighborhoods",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "id": "nb-downtown", "name": "Downtown / Railroad" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-122.725, 42.188],
+            [-122.698, 42.188],
+            [-122.698, 42.202],
+            [-122.725, 42.202],
+            [-122.725, 42.188]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "nb-north", "name": "North Ashland" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-122.74, 42.202],
+            [-122.68, 42.202],
+            [-122.68, 42.225],
+            [-122.74, 42.225],
+            [-122.74, 42.202]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "nb-south", "name": "South / Siskiyou" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-122.74, 42.165],
+            [-122.665, 42.165],
+            [-122.665, 42.188],
+            [-122.74, 42.188],
+            [-122.74, 42.165]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "nb-east", "name": "East / Highland" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-122.665, 42.175],
+            [-122.635, 42.175],
+            [-122.635, 42.215],
+            [-122.665, 42.215],
+            [-122.665, 42.175]
+          ]
+        ]
+      }
+    }
+  ]
+}
