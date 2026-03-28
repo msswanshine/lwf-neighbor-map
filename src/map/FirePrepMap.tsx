@@ -312,3 +312,5 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     );
   },
 );
+
+FirePrepMap.displayName = "FirePrepMap";

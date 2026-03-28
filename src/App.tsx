@@ -186,10 +186,6 @@ export default function App() {
   }, [addressesForMap, selectedAddressId]);
 
   useEffect(() => {
-    setSelectionHiddenByFilter(false);
-  }, [participantFilter, debouncedSearch]);
-
-  useEffect(() => {
     if (selectedAddressId) setSelectionHiddenByFilter(false);
   }, [selectedAddressId]);
 
@@ -326,7 +322,10 @@ export default function App() {
             <input
               type="search"
               value={addressSearch}
-              onChange={(e) => setAddressSearch(e.target.value)}
+              onChange={(e) => {
+                setSelectionHiddenByFilter(false);
+                setAddressSearch(e.target.value);
+              }}
               className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-2 text-sm text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
               placeholder="e.g. Siskiyou or DEMO-R130…"
               autoComplete="off"
@@ -339,14 +338,20 @@ export default function App() {
             <div className="mt-1 flex flex-wrap gap-1">
               <FilterChip
                 active={participantFilter === "all"}
-                onClick={() => setParticipantFilter("all")}
+                onClick={() => {
+                  setSelectionHiddenByFilter(false);
+                  setParticipantFilter("all");
+                }}
                 label="All"
               />
               {PARTICIPANT_ORDER.map((p) => (
                 <FilterChip
                   key={p}
                   active={participantFilter === p}
-                  onClick={() => setParticipantFilter(p)}
+                  onClick={() => {
+                    setSelectionHiddenByFilter(false);
+                    setParticipantFilter(p);
+                  }}
                   label={PARTICIPANT_LABELS[p]}
                   accent={PARTICIPANT_ACCENT_HEX[p]}
                 />
