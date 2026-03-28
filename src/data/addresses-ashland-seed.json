@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ash-parcel-downtown-01",
+    "parcelId": "DEMO-R130121800-001",
+    "normalizedAddress": "20 S 1ST ST ASHLAND OR 97520",
+    "lat": 42.19685,
+    "lng": -122.71245,
+    "label": "Plaza block (demo parcel)",
+    "street": "20 S 1st St",
+    "participantType": "business",
+    "grade": "B",
+    "engagementCount": 3
+  },
+  {
+    "id": "ash-parcel-north-02",
+    "parcelId": "DEMO-R130121800-002",
+    "normalizedAddress": "880 N MOUNTAIN AVE ASHLAND OR 97520",
+    "lat": 42.2021,
+    "lng": -122.7042,
+    "label": "North Mountain corridor",
+    "street": "880 N Mountain Ave",
+    "participantType": "residential",
+    "grade": null,
+    "engagementCount": 0
+  },
+  {
+    "id": "ash-parcel-siskiyou-03",
+    "parcelId": "DEMO-R130122200-015",
+    "normalizedAddress": "1555 SISKIYOU BLVD ASHLAND OR 97520",
+    "lat": 42.1876,
+    "lng": -122.7188,
+    "label": "Siskiyou retail strip",
+    "street": "1555 Siskiyou Blvd",
+    "participantType": "business",
+    "grade": "C",
+    "engagementCount": 6
+  },
+  {
+    "id": "ash-parcel-highland-04",
+    "parcelId": "DEMO-R130123500-008",
+    "normalizedAddress": "1400 HIGHLAND AVE ASHLAND OR 97520",
+    "lat": 42.1992,
+    "lng": -122.6785,
+    "label": "Highland residential cluster",
+    "street": "1400 Highland Ave",
+    "participantType": "residential",
+    "grade": "A",
+    "engagementCount": 2
+  },
+  {
+    "id": "ash-parcel-helman-05",
+    "parcelId": "DEMO-R130121600-022",
+    "normalizedAddress": "945 HELMAN ST ASHLAND OR 97520",
+    "lat": 42.1918,
+    "lng": -122.7285,
+    "label": "Helman neighborhood",
+    "street": "945 Helman St",
+    "participantType": "hoa",
+    "grade": "D",
+    "engagementCount": 4
+  },
+  {
+    "id": "ash-parcel-rail-06",
+    "parcelId": "DEMO-R130121700-011",
+    "normalizedAddress": "345 A ST ASHLAND OR 97520",
+    "lat": 42.2054,
+    "lng": -122.7112,
+    "label": "Rail district mixed-use",
+    "street": "345 A St",
+    "participantType": "property_manager",
+    "grade": "B",
+    "engagementCount": 5
+  },
+  {
+    "id": "ash-parcel-sou-07",
+    "parcelId": "DEMO-R130124400-003",
+    "normalizedAddress": "1250 SISKIYOU BLVD ASHLAND OR 97520",
+    "lat": 42.1849,
+    "lng": -122.6965,
+    "label": "University vicinity",
+    "street": "1250 Siskiyou Blvd",
+    "participantType": "institution",
+    "grade": "F",
+    "engagementCount": 1
+  },
+  {
+    "id": "ash-parcel-east-main-08",
+    "parcelId": "DEMO-R130122900-019",
+    "normalizedAddress": "1624 E MAIN ST ASHLAND OR 97520",
+    "lat": 42.1949,
+    "lng": -122.6862,
+    "label": "East Main business",
+    "street": "1624 E Main St",
+    "participantType": "business",
+    "grade": null,
+    "engagementCount": 1
+  },
+  {
+    "id": "ash-parcel-clear-creek-09",
+    "parcelId": "DEMO-R130120900-031",
+    "normalizedAddress": "595 CLEAR CREEK DR ASHLAND OR 97520",
+    "lat": 42.2088,
+    "lng": -122.6925,
+    "label": "Clear Creek housing",
+    "street": "595 Clear Creek Dr",
+    "participantType": "residential",
+    "grade": "E",
+    "engagementCount": 2
+  },
+  {
+    "id": "ash-parcel-lithia-10",
+    "parcelId": "DEMO-R130121200-007",
+    "normalizedAddress": "507 CLAY ST ASHLAND OR 97520",
+    "lat": 42.1902,
+    "lng": -122.7018,
+    "label": "Clay / Lithia neighborhood",
+    "street": "507 Clay St",
+    "participantType": "residential",
+    "grade": null,
+    "engagementCount": 0
+  }
+]
