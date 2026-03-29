@@ -2,18 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { ASHLAND_BBOX } from "./config/regions";
 import { assignNeighborhoodIds } from "./features/neighborhoods/assign-neighborhood";
-import {
-  computeNeighborhoodRollups,
-  MIN_RATED_ADDRESSES_FOR_ROLLUP,
-} from "./features/neighborhoods/rollup";
+import { computeNeighborhoodRollups } from "./features/neighborhoods/rollup";
 import type {
   AddressRecord,
   LetterGrade,
   ParticipantType,
-} from "./features/addresses/types";
-import {
-  PARTICIPANT_LABELS,
-  PARTICIPANT_ORDER,
 } from "./features/addresses/types";
 import { getBundledSeedAddresses } from "./features/addresses/initial-addresses";
 import { mergeGradeAndEngagement } from "./features/addresses/storage";
@@ -23,15 +16,8 @@ import {
   coverageToCsv,
   downloadCsv,
 } from "./features/city-metrics";
-import {
-  MAP_WASH_LEGEND_ROWS,
-  MAP_WASH_RGBA,
-  MAP_WASH_SWATCH_HEX,
-  MAP_WASH_TIER_LABEL,
-  abShareToWashTier,
-} from "./lib/map-ab-share-wash";
-import { GRADE_HEX, GRADE_ORDER } from "./lib/rating-colors";
-import { PARTICIPANT_ACCENT_HEX } from "./lib/participant-colors";
+import { MAP_WASH_RGBA, abShareToWashTier } from "./lib/map-ab-share-wash";
+import { NavigationControl } from "./components/NavigationControl";
 import {
   FirePrepMap,
   type FirePrepMapHandle,
@@ -235,9 +221,6 @@ export default function App() {
   }, [addressesWithNb, neighborhoodNameById]);
 
   const selectedAddress = addressesWithNb.find((a) => a.id === selectedAddressId);
-  const selectedRollup = selectedNeighborhoodId
-    ? rollups.get(selectedNeighborhoodId)
-    : null;
   const selectedNeighborhoodName =
     neighborhoodsBase?.features.find(
       (f) => f.properties.id === selectedNeighborhoodId,
@@ -260,30 +243,19 @@ export default function App() {
   const mapWashRgba = MAP_WASH_RGBA[cityAbShare.tier];
 
   return (
-    <div className="flex min-h-full flex-col gap-3 p-3 md:flex-row md:gap-4 md:p-4">
-      <div className="flex min-h-[50vh] flex-1 flex-col md:min-h-0">
+    <div className="flex min-h-full flex-col gap-3 p-3 md:h-[calc(100dvh-2rem)] md:min-h-0 md:flex-row md:gap-4 md:overflow-hidden md:p-4">
+      <div className="flex min-h-[50vh] flex-1 flex-col overflow-y-auto md:min-h-0">
         <header className="mb-2 shrink-0">
           <h1 className="text-lg font-semibold text-[var(--color-text)] md:text-xl">
             Ashland fireWise Engagement Map
           </h1>
           <p className="max-w-prose text-sm text-[var(--color-muted)]">
-            Map showing all addresses who have opted in to the fireWise program engagement map, with grades of fireWise preparedness and participant type.
-            <br />
-            <strong>Goal:</strong> Easily identify addresses who have opted in to the fireWise program and their preparedness grade, while identifying areas of least preparedness to focus efforts of engagement.
-            <br />
-            <strong>Enable neighborhoods to help build urban firebreak zones by lining up A rated properties</strong>
-            <br />
-            <strong>Features:</strong>
-            <ul>
-              <li>Map showing all addresses who have opted in to the fireWise program</li>
-              <li>Grades of fireWise preparedness</li>
-              <li>Participant type</li>
-              <li>Neighborhood rollups</li>
-              <li>Enable neighborhoods to help build urban firebreak zones by lining up A rated properties</li>
-            </ul>
+            Map showing all addresses who have opted in to the fireWise program
+            engagement map, with grades of fireWise preparedness and participant
+            type.
           </p>
         </header>
-        <div className="min-h-[280px] flex-1">
+        <div className="min-h-[420px] flex-1">
           {neighborhoodsBase ? (
             <FirePrepMap
               ref={mapRef}
@@ -296,373 +268,77 @@ export default function App() {
             />
           ) : (
             <div
-              className="flex h-full min-h-[280px] items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] text-[var(--color-muted)]"
+              className="flex h-full min-h-[420px] items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] text-[var(--color-muted)]"
               role="status"
             >
               Loading neighborhood boundaries…
             </div>
           )}
         </div>
+        <div className="mt-3 max-w-prose shrink-0 text-sm text-[var(--color-muted)]">
+          <strong className="text-[var(--color-text)]">Goals:</strong>
+          <ul className="mt-1 list-inside list-disc">
+            <li>
+              Easily identify addresses who have opted in to the fireWise program
+              and their preparedness grade
+            </li>
+            <li>Identify areas of least preparedness to maximize outreach</li>
+            <li>
+              Enable neighborhoods to help build urban firebreak zones by working
+              together clumping A rated properties
+            </li>
+            <li>
+              Help Ashland become a model for urban fire preparedness by being a
+              city wide fire break by design.
+            </li>
+          </ul>
+          <strong className="mt-3 block text-[var(--color-text)]">Features:</strong>
+          <ul className="mt-1 list-inside list-disc">
+            <li>Map showing all addresses who have opted in to the fireWise program</li>
+            <li>Grades of fireWise preparedness</li>
+            <li>Participant type</li>
+            <li>Neighborhood rollups</li>
+            <li>
+              Enable neighborhoods to help build urban firebreak zones by lining up
+              A rated properties
+            </li>
+          </ul>
+        </div>
       </div>
 
-      <aside
-        className="flex w-full shrink-0 flex-col gap-3 md:w-80"
-        aria-label="Ratings, filters, and city summary"
-      >
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-          <h2 className="text-sm font-semibold text-[var(--color-text)]">
-            Find on map
-          </h2>
-          <label className="mt-2 block text-xs text-[var(--color-muted)]">
-            Search address or parcel id
-            <input
-              type="search"
-              value={addressSearch}
-              onChange={(e) => {
-                setSelectionHiddenByFilter(false);
-                setAddressSearch(e.target.value);
-              }}
-              className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-2 text-sm text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-              placeholder="e.g. Siskiyou or DEMO-R130…"
-              autoComplete="off"
-            />
-          </label>
-          <fieldset className="mt-3">
-            <legend className="text-xs text-[var(--color-muted)]">
-              Show participant type on map
-            </legend>
-            <div className="mt-1 flex flex-wrap gap-1">
-              <FilterChip
-                active={participantFilter === "all"}
-                onClick={() => {
-                  setSelectionHiddenByFilter(false);
-                  setParticipantFilter("all");
-                }}
-                label="All"
-              />
-              {PARTICIPANT_ORDER.map((p) => (
-                <FilterChip
-                  key={p}
-                  active={participantFilter === p}
-                  onClick={() => {
-                    setSelectionHiddenByFilter(false);
-                    setParticipantFilter(p);
-                  }}
-                  label={PARTICIPANT_LABELS[p]}
-                  accent={PARTICIPANT_ACCENT_HEX[p]}
-                />
-              ))}
-            </div>
-          </fieldset>
-          <p className="mt-2 text-xs text-[var(--color-text)]" aria-live="polite">
-            Showing{" "}
-            <strong>{addressesForMap.length}</strong> of{" "}
-            <strong>{addressesWithNb.length}</strong> sites on the map.
-          </p>
-          {addressesForMap.length === 0 && addressesWithNb.length > 0 ? (
-            <p className="mt-1 text-xs text-amber-200/90" role="status">
-              No sites match this filter or search—try “All” or clear the search
-              box.
-            </p>
-          ) : null}
-          {selectionHiddenByFilter ? (
-            <p className="mt-1 text-xs text-[var(--color-muted)]" role="status">
-              Previous selection was hidden by the current filter or search.
-            </p>
-          ) : null}
-        </div>
-
-        <Legend />
-
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-[var(--color-text)]">
-              City summary
-            </h2>
-            <div className="flex flex-wrap gap-1">
-              <button
-                type="button"
-                className="rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                onClick={exportCoverage}
-              >
-                Export coverage CSV
-              </button>
-              <button
-                type="button"
-                className="rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                onClick={exportSnapshot}
-              >
-                Export addresses CSV
-              </button>
-            </div>
-          </div>
-          <p className="mt-2 text-xs text-[var(--color-muted)]">
-            Engagement count &gt; 0 is used as a simple stand-in for “opted in /
-            touched by an affiliate app.” Metrics use <strong>all</strong> seeded
-            sites; map dots respect the type filter and search.
-          </p>
-          <ul className="mt-2 space-y-1 text-xs text-[var(--color-text)]">
-            <li>Total sites: {cityTotalSites}</li>
-            <li>Engaged (≥1 touch): {cityEngaged}</li>
-            <li>Graded: {cityGraded}</li>
-          </ul>
-
-          <div className="mt-3 border-t border-[var(--color-border)] pt-2">
-            <h3 className="text-xs font-semibold text-[var(--color-text)]">
-              Map tint (A or B share)
-            </h3>
-            <p className="mt-1 text-[10px] text-[var(--color-muted)]">
-              Full-map wash color uses the share of <strong>all</strong> listed
-              sites that are graded A or B (ungraded counts as not A/B).
-            </p>
-            <p className="mt-2 text-xs text-[var(--color-text)]" aria-live="polite">
-              {cityAbShare.total === 0 ? (
-                "No sites loaded."
-              ) : (
-                <>
-                  Current:{" "}
-                  <strong>{Math.round(cityAbShare.pct)}%</strong> (
-                  {cityAbShare.abCount} of {cityAbShare.total} sites A or B) —{" "}
-                  <strong>{MAP_WASH_TIER_LABEL[cityAbShare.tier]}</strong>
-                </>
-              )}
-            </p>
-            <ul className="mt-2 grid grid-cols-2 gap-2">
-              {MAP_WASH_LEGEND_ROWS.map((row) => {
-                const active = row.tier === cityAbShare.tier && cityAbShare.total > 0;
-                return (
-                  <li
-                    key={row.tier}
-                    className={`flex items-center gap-2 text-[10px] ${
-                      active ? "font-semibold text-[var(--color-text)]" : "text-[var(--color-muted)]"
-                    }`}
-                  >
-                    <span
-                      className="inline-block h-3 w-3 shrink-0 rounded-sm border border-[var(--color-border)]"
-                      style={{ backgroundColor: MAP_WASH_SWATCH_HEX[row.tier] }}
-                      aria-hidden
-                    />
-                    <span>
-                      {row.rangeLabel}{" "}
-                      <span className="opacity-80">({MAP_WASH_TIER_LABEL[row.tier]})</span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          <div className="mt-3 max-h-48 overflow-y-auto border-t border-[var(--color-border)] pt-2">
-            <table className="w-full text-left text-[10px] text-[var(--color-muted)]">
-              <thead>
-                <tr className="text-[var(--color-text)]">
-                  <th className="py-1 pr-1 font-medium">Area</th>
-                  <th className="py-1 pr-1 font-medium">Sites</th>
-                  <th className="py-1 pr-1 font-medium">Eng.</th>
-                  <th className="py-1 font-medium">Grd.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coverageRows.map((r) => (
-                  <tr key={r.neighborhoodId}>
-                    <td className="py-0.5 pr-1 text-[var(--color-text)]">
-                      {r.neighborhoodName}
-                    </td>
-                    <td className="py-0.5 pr-1">{r.siteCount}</td>
-                    <td className="py-0.5 pr-1">
-                      {r.engagedCount}{" "}
-                      <span className="opacity-70">
-                        ({Math.round(r.engagementRate * 100)}%)
-                      </span>
-                    </td>
-                    <td className="py-0.5">
-                      {r.gradedCount}{" "}
-                      <span className="opacity-70">
-                        ({Math.round(r.gradedRate * 100)}%)
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-          <h2 className="text-sm font-semibold text-[var(--color-text)]">
-            Selection
-          </h2>
-          {!selectedAddress && !selectedNeighborhoodId && (
-            <p className="mt-2 text-sm text-[var(--color-muted)]">
-              Click a property marker for grades and participant type.{" "}
-              <span className="sr-only">Map bounds: Ashland, Oregon.</span>
-            </p>
-          )}
-
-          {selectedAddress && (
-            <div className="mt-3 space-y-2">
-              <p className="text-sm font-medium text-[var(--color-text)]">
-                {selectedAddress.label}
-              </p>
-              {selectedAddress.street && (
-                <p className="text-xs text-[var(--color-muted)]">
-                  {selectedAddress.street}
-                </p>
-              )}
-              {selectedAddress.parcelId && (
-                <p className="text-xs text-[var(--color-muted)]">
-                  Parcel (demo): {selectedAddress.parcelId}
-                </p>
-              )}
-              {selectedAddress.normalizedAddress && (
-                <p className="text-xs text-[var(--color-muted)]">
-                  Normalized: {selectedAddress.normalizedAddress}
-                </p>
-              )}
-              <label className="block text-xs text-[var(--color-muted)]">
-                Participant
-                <select
-                  value={selectedAddress.participantType}
-                  onChange={(e) =>
-                    setParticipantType(
-                      selectedAddress.id,
-                      e.target.value as ParticipantType,
-                    )
-                  }
-                  className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-2 text-sm text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                >
-                  {PARTICIPANT_ORDER.map((p) => (
-                    <option key={p} value={p}>
-                      {PARTICIPANT_LABELS[p]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="text-xs text-[var(--color-muted)]">
-                Engagement (mock / affiliate proxy):{" "}
-                {selectedAddress.engagementCount}
-              </p>
-              <div
-                className="flex flex-wrap gap-1"
-                role="group"
-                aria-label="Preparedness grade"
-              >
-                {GRADE_ORDER.map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    className={`min-h-[44px] min-w-[44px] rounded border px-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${
-                      selectedAddress.grade === g
-                        ? "border-white text-white"
-                        : "border-[var(--color-border)] text-[var(--color-text)]"
-                    }`}
-                    style={{
-                      backgroundColor: GRADE_HEX[g],
-                    }}
-                    onClick={() => setGrade(selectedAddress.id, g)}
-                  >
-                    {g}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="min-h-[44px] rounded border border-[var(--color-border)] px-2 text-xs text-[var(--color-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                  onClick={() => setGrade(selectedAddress.id, null)}
-                >
-                  Clear grade
-                </button>
-              </div>
-              <button
-                type="button"
-                className="mt-2 rounded border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                onClick={() => bumpEngagement(selectedAddress.id)}
-              >
-                Simulate affiliate visit (+1 engagement)
-              </button>
-            </div>
-          )}
-
-          {selectedNeighborhoodId && selectedRollup && (
-            <div className="mt-3 border-t border-[var(--color-border)] pt-3">
-              <p className="text-sm font-medium text-[var(--color-text)]">
-                {selectedNeighborhoodName ?? selectedNeighborhoodId}
-              </p>
-              <p className="mt-1 text-sm text-[var(--color-muted)]">
-                Rollup grade:{" "}
-                <span className="font-semibold text-[var(--color-text)]">
-                  {selectedRollup.grade ?? "Insufficient data"}
-                </span>
-                {selectedRollup.ratedCount <
-                  MIN_RATED_ADDRESSES_FOR_ROLLUP && (
-                  <span className="block text-xs">
-                    Need at least {MIN_RATED_ADDRESSES_FOR_ROLLUP} graded
-                    addresses in this area (currently {selectedRollup.ratedCount}
-                    ).
-                  </span>
-                )}
-              </p>
-              <p className="text-xs text-[var(--color-muted)]">
-                Rated: {selectedRollup.ratedCount}, Ungraded:{" "}
-                {selectedRollup.unratedCount}, Total engagement:{" "}
-                {selectedRollup.totalEngagement}
-              </p>
-              <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto text-xs text-[var(--color-muted)]">
-                {addressesWithNb
-                  .filter((a) => a.neighborhoodId === selectedNeighborhoodId)
-                  .map((a) => (
-                    <li key={a.id}>
-                      <button
-                        type="button"
-                        className="text-left text-[var(--color-text)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                        onClick={() => {
-                          setSelectedNeighborhoodId(null);
-                          setSelectedAddressId(a.id);
-                        }}
-                      >
-                        {a.label} — {PARTICIPANT_LABELS[a.participantType]} —{" "}
-                        {a.grade ?? "—"}
-                      </button>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        <p className="text-xs text-[var(--color-muted)]">
-          View: [{ASHLAND_BBOX.join(", ")}] — west, south, east, north.
-        </p>
-      </aside>
-    </div>
-  );
-}
-
-function FilterChip(props: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-  accent?: string;
-}) {
-  const { active, label, onClick, accent } = props;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`min-h-[36px] rounded-full border px-2 py-1 text-[10px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:text-xs ${
-        active
-          ? "border-white bg-white/10 text-[var(--color-text)]"
-          : "border-[var(--color-border)] text-[var(--color-muted)]"
-      }`}
-      style={
-        accent && active
-          ? { borderColor: accent, boxShadow: `inset 0 0 0 1px ${accent}` }
-          : accent && !active
-            ? { borderLeftWidth: 3, borderLeftColor: accent }
+      <NavigationControl
+        ashlandBbox={ASHLAND_BBOX}
+        addressSearch={addressSearch}
+        onAddressSearchChange={setAddressSearch}
+        onClearSelectionHidden={() => setSelectionHiddenByFilter(false)}
+        participantFilter={participantFilter}
+        onParticipantFilter={setParticipantFilter}
+        addressesForMapCount={addressesForMap.length}
+        addressesWithNbCount={addressesWithNb.length}
+        selectionHiddenByFilter={selectionHiddenByFilter}
+        onExportCoverage={exportCoverage}
+        onExportSnapshot={exportSnapshot}
+        cityTotalSites={cityTotalSites}
+        cityEngaged={cityEngaged}
+        cityGraded={cityGraded}
+        cityAbShare={cityAbShare}
+        coverageRows={coverageRows}
+        selectedAddress={selectedAddress}
+        selectedNeighborhoodId={selectedNeighborhoodId}
+        selectedRollup={
+          selectedNeighborhoodId
+            ? rollups.get(selectedNeighborhoodId)
             : undefined
-      }
-    >
-      {label}
-    </button>
+        }
+        selectedNeighborhoodName={selectedNeighborhoodName}
+        onSelectAddressId={setSelectedAddressId}
+        onSelectNeighborhoodId={setSelectedNeighborhoodId}
+        onSetParticipantType={setParticipantType}
+        onSetGrade={setGrade}
+        onBumpEngagement={bumpEngagement}
+        addressesWithNb={addressesWithNb}
+      />
+    </div>
   );
 }
 
@@ -673,50 +349,4 @@ function findPersistedAddress(
   const a = list.find((x) => x.id === id);
   if (!a) throw new Error(`Unknown address ${id}`);
   return a;
-}
-
-function Legend() {
-  return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-      <h2 className="text-sm font-semibold text-[var(--color-text)]">Legend</h2>
-      <p className="mt-1 text-xs text-[var(--color-muted)]">
-        <strong>Fill</strong> color = preparedness grade; <strong>ring</strong>{" "}
-        color = participant type (see below). Map shows property markers only.
-      </p>
-      <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {GRADE_ORDER.map((g) => (
-          <li key={g} className="flex items-center gap-2 text-xs">
-            <span
-              className="inline-block h-3 w-3 shrink-0 rounded-full border border-[var(--color-border)]"
-              style={{ backgroundColor: GRADE_HEX[g] }}
-              aria-hidden
-            />
-            <span className="text-[var(--color-text)]">{g}</span>
-          </li>
-        ))}
-        <li className="flex items-center gap-2 text-xs">
-          <span
-            className="inline-block h-3 w-3 shrink-0 rounded-full border border-[var(--color-border)] bg-[#64748b]"
-            aria-hidden
-          />
-          <span className="text-[var(--color-text)]">Ungraded / N/A</span>
-        </li>
-      </ul>
-      <p className="mb-1 mt-3 text-[10px] font-medium text-[var(--color-text)]">
-        Participant accents (filters)
-      </p>
-      <ul className="grid gap-1 text-[10px] text-[var(--color-muted)]">
-        {PARTICIPANT_ORDER.map((p) => (
-          <li key={p} className="flex items-center gap-2">
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: PARTICIPANT_ACCENT_HEX[p] }}
-              aria-hidden
-            />
-            {PARTICIPANT_LABELS[p]}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }

@@ -212,10 +212,10 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     }, [addresses, selectedId]);
 
     return (
-      <div className="relative h-full w-full min-h-[320px] rounded-lg border border-[var(--color-border)]">
+      <div className="relative h-full w-full min-h-[420px] rounded-lg border border-[var(--color-border)]">
         <div
           id={MAP_CONTAINER_ID}
-          className="h-full w-full min-h-[320px] rounded-[inherit]"
+          className="h-full w-full min-h-[420px] rounded-[inherit]"
           role="application"
           aria-label="Interactive map of Ashland with preparedness ratings"
         />
