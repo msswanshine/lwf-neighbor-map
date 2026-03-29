@@ -28,3 +28,20 @@ export function gradeToMapColor(grade: LetterGrade | null): string {
   if (!grade) return UNKNOWN_GRADE_HEX;
   return GRADE_HEX[grade];
 }
+
+/** Hex like `#22c55e` or `#abc` → `rgba(r,g,b,a)` for halos and shadows. */
+export function gradeHexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace(/^#/, "");
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
+  if (full.length !== 6) return `rgba(100,116,139,${alpha})`;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}

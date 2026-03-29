@@ -23,6 +23,13 @@ import {
   coverageToCsv,
   downloadCsv,
 } from "./features/city-metrics";
+import {
+  MAP_WASH_LEGEND_ROWS,
+  MAP_WASH_RGBA,
+  MAP_WASH_SWATCH_HEX,
+  MAP_WASH_TIER_LABEL,
+  abShareToWashTier,
+} from "./lib/map-ab-share-wash";
 import { GRADE_HEX, GRADE_ORDER } from "./lib/rating-colors";
 import { PARTICIPANT_ACCENT_HEX } from "./lib/participant-colors";
 import {
@@ -240,6 +247,18 @@ export default function App() {
   const cityEngaged = addressesWithNb.filter((a) => a.engagementCount > 0).length;
   const cityGraded = addressesWithNb.filter((a) => a.grade !== null).length;
 
+  const cityAbShare = useMemo(() => {
+    const total = addressesWithNb.length;
+    const abCount = addressesWithNb.filter(
+      (a) => a.grade === "A" || a.grade === "B",
+    ).length;
+    const pct = total ? (abCount / total) * 100 : 0;
+    const tier = abShareToWashTier(pct);
+    return { total, abCount, pct, tier };
+  }, [addressesWithNb]);
+
+  const mapWashRgba = MAP_WASH_RGBA[cityAbShare.tier];
+
   return (
     <div className="flex min-h-full flex-col gap-3 p-3 md:flex-row md:gap-4 md:p-4">
       <div className="flex min-h-[50vh] flex-1 flex-col md:min-h-0">
@@ -252,12 +271,15 @@ export default function App() {
             <br />
             <strong>Goal:</strong> Easily identify addresses who have opted in to the fireWise program and their preparedness grade, while identifying areas of least preparedness to focus efforts of engagement.
             <br />
+            <strong>Enable neighborhoods to help build urban firebreak zones by lining up A rated properties</strong>
+            <br />
             <strong>Features:</strong>
             <ul>
               <li>Map showing all addresses who have opted in to the fireWise program</li>
               <li>Grades of fireWise preparedness</li>
               <li>Participant type</li>
               <li>Neighborhood rollups</li>
+              <li>Enable neighborhoods to help build urban firebreak zones by lining up A rated properties</li>
             </ul>
           </p>
         </header>
@@ -269,6 +291,7 @@ export default function App() {
               selectedId={selectedAddressId}
               onSelectAddress={setSelectedAddressId}
               onSelectNeighborhood={setSelectedNeighborhoodId}
+              mapWashRgba={mapWashRgba}
               onOverlayReady={onMapOverlayReady}
             />
           ) : (
@@ -383,6 +406,52 @@ export default function App() {
             <li>Engaged (≥1 touch): {cityEngaged}</li>
             <li>Graded: {cityGraded}</li>
           </ul>
+
+          <div className="mt-3 border-t border-[var(--color-border)] pt-2">
+            <h3 className="text-xs font-semibold text-[var(--color-text)]">
+              Map tint (A or B share)
+            </h3>
+            <p className="mt-1 text-[10px] text-[var(--color-muted)]">
+              Full-map wash color uses the share of <strong>all</strong> listed
+              sites that are graded A or B (ungraded counts as not A/B).
+            </p>
+            <p className="mt-2 text-xs text-[var(--color-text)]" aria-live="polite">
+              {cityAbShare.total === 0 ? (
+                "No sites loaded."
+              ) : (
+                <>
+                  Current:{" "}
+                  <strong>{Math.round(cityAbShare.pct)}%</strong> (
+                  {cityAbShare.abCount} of {cityAbShare.total} sites A or B) —{" "}
+                  <strong>{MAP_WASH_TIER_LABEL[cityAbShare.tier]}</strong>
+                </>
+              )}
+            </p>
+            <ul className="mt-2 grid grid-cols-2 gap-2">
+              {MAP_WASH_LEGEND_ROWS.map((row) => {
+                const active = row.tier === cityAbShare.tier && cityAbShare.total > 0;
+                return (
+                  <li
+                    key={row.tier}
+                    className={`flex items-center gap-2 text-[10px] ${
+                      active ? "font-semibold text-[var(--color-text)]" : "text-[var(--color-muted)]"
+                    }`}
+                  >
+                    <span
+                      className="inline-block h-3 w-3 shrink-0 rounded-sm border border-[var(--color-border)]"
+                      style={{ backgroundColor: MAP_WASH_SWATCH_HEX[row.tier] }}
+                      aria-hidden
+                    />
+                    <span>
+                      {row.rangeLabel}{" "}
+                      <span className="opacity-80">({MAP_WASH_TIER_LABEL[row.tier]})</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
           <div className="mt-3 max-h-48 overflow-y-auto border-t border-[var(--color-border)] pt-2">
             <table className="w-full text-left text-[10px] text-[var(--color-muted)]">
               <thead>

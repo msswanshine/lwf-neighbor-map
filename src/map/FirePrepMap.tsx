@@ -10,10 +10,15 @@ import { Protocol } from "pmtiles";
 import { ASHLAND_BBOX } from "../config/regions";
 import { buildOvertureStyle } from "./overture-style";
 import type { AddressRecord } from "../features/addresses/types";
-import { gradeToMapColor } from "../lib/rating-colors";
+import { gradeHexToRgba, gradeToMapColor } from "../lib/rating-colors";
 import { PARTICIPANT_ACCENT_HEX } from "../lib/participant-colors";
 
 const MAP_CONTAINER_ID = "fire-prep-map";
+
+/** Solid “ring” from box-shadow spread: 24px beyond the dot edge, grade-colored. */
+const ADDRESS_HALO_SPREAD_PX = 24;
+/** Stronger than the map-wide red wash so halos read clearly on top of it. */
+const ADDRESS_HALO_ALPHA = 0.62;
 
 /** Clamp address extents to Ashland study area; expand point-like sets slightly. */
 function clampedBoundsFromAddresses(
@@ -59,6 +64,7 @@ function buildAddressMarkerElement(
   const ring = PARTICIPANT_ACCENT_HEX[a.participantType];
   const size = selected ? 22 : 14;
   const ringW = selected ? 2.5 : 2;
+  const haloRgb = gradeHexToRgba(fill, ADDRESS_HALO_ALPHA);
   const el = document.createElement("button");
   el.type = "button";
   el.setAttribute("aria-label", `${a.label}, preparedness ${a.grade ?? "ungraded"}`);
@@ -71,7 +77,8 @@ function buildAddressMarkerElement(
   el.style.cursor = "pointer";
   el.style.boxSizing = "border-box";
   el.style.display = "block";
-  el.style.boxShadow = "0 1px 3px rgba(0,0,0,0.35)";
+  el.style.overflow = "visible";
+  el.style.boxShadow = `0 0 0 ${ADDRESS_HALO_SPREAD_PX}px ${haloRgb}, 0 1px 3px rgba(0,0,0,0.35)`;
   return el;
 }
 
@@ -80,6 +87,8 @@ export type FirePrepMapProps = {
   selectedId: string | null;
   onSelectAddress: (id: string | null) => void;
   onSelectNeighborhood: (id: string | null) => void;
+  /** Semi-transparent RGBA wash over the map (A/B city share). */
+  mapWashRgba: string;
   /** Fired once the map style is ready (for initial fit). */
   onOverlayReady?: () => void;
 };
@@ -95,6 +104,7 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       selectedId,
       onSelectAddress,
       onSelectNeighborhood,
+      mapWashRgba,
       onOverlayReady,
     },
     ref,
@@ -202,12 +212,19 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     }, [addresses, selectedId]);
 
     return (
-      <div
-        id={MAP_CONTAINER_ID}
-        className="h-full w-full min-h-[320px] rounded-lg border border-[var(--color-border)]"
-        role="application"
-        aria-label="Interactive map of Ashland with preparedness ratings"
-      />
+      <div className="relative h-full w-full min-h-[320px] rounded-lg border border-[var(--color-border)]">
+        <div
+          id={MAP_CONTAINER_ID}
+          className="h-full w-full min-h-[320px] rounded-[inherit]"
+          role="application"
+          aria-label="Interactive map of Ashland with preparedness ratings"
+        />
+        <div
+          className="pointer-events-none absolute inset-0 z-10 rounded-[inherit]"
+          style={{ backgroundColor: mapWashRgba }}
+          aria-hidden
+        />
+      </div>
     );
   },
 );

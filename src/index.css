@@ -22,3 +22,9 @@ body {
   color: var(--color-text);
   font-family: system-ui, sans-serif;
 }
+
+/* Grade halos use box-shadow spread; avoid clipping inside MapLibre marker DOM. */
+.maplibregl-marker,
+.maplibregl-marker-content {
+  overflow: visible !important;
+}
