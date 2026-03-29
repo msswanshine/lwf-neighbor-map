@@ -72,7 +72,6 @@ export default function App() {
   const [selectionHiddenByFilter, setSelectionHiddenByFilter] = useState(false);
   const [showPotentialFireBreakLinks, setShowPotentialFireBreakLinks] =
     useState(false);
-  const [showCityWashOverlay, setShowCityWashOverlay] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -305,8 +304,6 @@ export default function App() {
               selectedId={selectedAddressId}
               onSelectAddress={setSelectedAddressId}
               onSelectNeighborhood={setSelectedNeighborhoodId}
-              cityWashTier={cityAbShare.tier}
-              showCityWashOverlay={showCityWashOverlay}
               onOverlayReady={onMapOverlayReady}
               showPotentialFireBreakLinks={showPotentialFireBreakLinks}
             />
@@ -384,8 +381,6 @@ export default function App() {
         addressesWithNb={addressesWithNb}
         showPotentialFireBreakLinks={showPotentialFireBreakLinks}
         onShowPotentialFireBreakLinksChange={setShowPotentialFireBreakLinks}
-        showCityWashOverlay={showCityWashOverlay}
-        onShowCityWashOverlayChange={setShowCityWashOverlay}
       />
     </div>
   );

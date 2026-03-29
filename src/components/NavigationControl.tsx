@@ -60,8 +60,6 @@ export type NavigationControlProps = {
   addressesWithNb: AddressRecord[];
   showPotentialFireBreakLinks: boolean;
   onShowPotentialFireBreakLinksChange: (show: boolean) => void;
-  showCityWashOverlay: boolean;
-  onShowCityWashOverlayChange: (show: boolean) => void;
 };
 
 export function NavigationControl(props: NavigationControlProps) {
@@ -95,8 +93,6 @@ export function NavigationControl(props: NavigationControlProps) {
     addressesWithNb,
     showPotentialFireBreakLinks,
     onShowPotentialFireBreakLinksChange,
-    showCityWashOverlay,
-    onShowCityWashOverlayChange,
   } = props;
 
   return (
@@ -204,22 +200,13 @@ export function NavigationControl(props: NavigationControlProps) {
 
           <div className="mt-3 border-t border-[var(--color-border)] pt-2">
             <h3 className="text-xs font-semibold text-[var(--color-text)]">
-              Map tint (A or B share)
+              A or B share (city and zones)
             </h3>
             <p className="mt-1 text-[10px] text-[var(--color-muted)]">
-              Full-map wash color uses the share of <strong>all</strong> listed
-              sites that are graded A or B (ungraded counts as not A/B).
-              Evacuation zone overlays use the same A/B tier colors per zone.
+              City-wide and each evacuation zone use the share of sites graded A
+              or B (ungraded counts as not A/B). Zone map colors follow the same
+              tier scale below.
             </p>
-            <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-[var(--color-text)]">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                checked={showCityWashOverlay}
-                onChange={(e) => onShowCityWashOverlayChange(e.target.checked)}
-              />
-              <span>Show city-wide map tint</span>
-            </label>
             <p className="mt-2 text-xs text-[var(--color-text)]" aria-live="polite">
               {cityAbShare.total === 0 ? (
                 "No sites loaded."

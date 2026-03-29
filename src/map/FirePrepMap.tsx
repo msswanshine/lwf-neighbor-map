@@ -8,10 +8,7 @@ import {
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
-import {
-  ASHLAND_BBOX,
-  ashlandStudyAreaFeatureCollection,
-} from "../config/regions";
+import { ASHLAND_BBOX } from "../config/regions";
 import {
   NEIGHBORHOODS_FILL_LAYER_ID,
   NEIGHBORHOODS_LINE_LAYER_ID,
@@ -24,7 +21,6 @@ import {
 } from "./neighborhood-layers";
 import { buildOvertureStyle } from "./overture-style";
 import type { AddressRecord } from "../features/addresses/types";
-import { MAP_WASH_SWATCH_HEX, type MapWashTier } from "../lib/map-ab-share-wash";
 import { buildHighGradeProximityLinks } from "../features/addresses/high-grade-proximity-links";
 import {
   buildAddressMarkerElement,
@@ -36,9 +32,6 @@ const MAP_CONTAINER_ID = "fire-prep-map";
 const HIGH_GRADE_LINKS_SOURCE_ID = "high-grade-links";
 const HIGH_GRADE_LINKS_LAYER_ID = "high-grade-links-line";
 
-const CITY_WASH_SOURCE_ID = "city-ab-wash";
-const CITY_WASH_LAYER_ID = "city-ab-wash-fill";
-
 export type FirePrepMapProps = {
   addresses: AddressRecord[];
   /** Boundaries used for labels and point-in-polygon (same asset as App fetch). */
@@ -49,10 +42,6 @@ export type FirePrepMapProps = {
   selectedId: string | null;
   onSelectAddress: (id: string | null) => void;
   onSelectNeighborhood: (id: string | null) => void;
-  /** City-wide A/B tier (same rule as sidebar); drawn as fill under zone overlays. */
-  cityWashTier: MapWashTier;
-  /** When false, the city-wide study-area tint is hidden (per-zone tier colors remain). */
-  showCityWashOverlay: boolean;
   /** Fired once the map style is ready (for initial fit). */
   onOverlayReady?: () => void;
   /** Green segments between A/B sites within 1 km. */
@@ -73,8 +62,6 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       selectedId,
       onSelectAddress,
       onSelectNeighborhood,
-      cityWashTier,
-      showCityWashOverlay,
       onOverlayReady,
       showPotentialFireBreakLinks,
     },
@@ -94,10 +81,6 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     showFireBreakLinksRef.current = showPotentialFireBreakLinks;
     const neighborhoodsRef = useRef(neighborhoods);
     neighborhoodsRef.current = neighborhoods;
-    const cityWashTierRef = useRef(cityWashTier);
-    cityWashTierRef.current = cityWashTier;
-    const showCityWashOverlayRef = useRef(showCityWashOverlay);
-    showCityWashOverlayRef.current = showCityWashOverlay;
 
     useImperativeHandle(
       ref,
@@ -170,22 +153,6 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
           neighborhoodsRef.current,
           HIGH_GRADE_LINKS_LAYER_ID,
         );
-        map.addSource(CITY_WASH_SOURCE_ID, {
-          type: "geojson",
-          data: ashlandStudyAreaFeatureCollection(),
-        });
-        map.addLayer(
-          {
-            id: CITY_WASH_LAYER_ID,
-            type: "fill",
-            source: CITY_WASH_SOURCE_ID,
-            paint: {
-              "fill-color": MAP_WASH_SWATCH_HEX[cityWashTierRef.current],
-              "fill-opacity": showCityWashOverlayRef.current ? 0.35 : 0,
-            },
-          },
-          NEIGHBORHOODS_FILL_LAYER_ID,
-        );
         map.setPaintProperty(
           NEIGHBORHOODS_FILL_LAYER_ID,
           "fill-opacity",
@@ -238,26 +205,6 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
         mapRef.current = null;
       };
     }, []);
-
-    useEffect(() => {
-      const map = mapRef.current;
-      if (!map?.isStyleLoaded() || !map.getLayer(CITY_WASH_LAYER_ID)) return;
-      map.setPaintProperty(
-        CITY_WASH_LAYER_ID,
-        "fill-color",
-        MAP_WASH_SWATCH_HEX[cityWashTier],
-      );
-    }, [cityWashTier]);
-
-    useEffect(() => {
-      const map = mapRef.current;
-      if (!map?.isStyleLoaded() || !map.getLayer(CITY_WASH_LAYER_ID)) return;
-      map.setPaintProperty(
-        CITY_WASH_LAYER_ID,
-        "fill-opacity",
-        showCityWashOverlay ? 0.35 : 0,
-      );
-    }, [showCityWashOverlay]);
 
     useEffect(() => {
       const map = mapRef.current;
