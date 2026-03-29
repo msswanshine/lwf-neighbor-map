@@ -96,10 +96,7 @@ export function NavigationControl(props: NavigationControlProps) {
   } = props;
 
   return (
-    <aside
-      className="flex w-full min-h-0 shrink-0 flex-col md:max-h-[calc(100dvh-2rem)] md:w-80"
-      aria-label="Ratings, filters, and city summary"
-    >
+    <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-y-contain pr-0.5 [scrollbar-gutter:stable]">
         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
           <h2 className="text-sm font-semibold text-[var(--color-text)]">
@@ -499,7 +496,7 @@ export function NavigationControl(props: NavigationControlProps) {
           View: [{ashlandBbox.join(", ")}] — west, south, east, north.
         </p>
       </div>
-    </aside>
+    </div>
   );
 }
 

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { ASHLAND_BBOX } from "./config/regions";
 import { assignNeighborhoodIds } from "./features/neighborhoods/assign-neighborhood";
@@ -52,6 +59,8 @@ function filterAddressesForMap(
 }
 
 export default function App() {
+  const ratingsDrawerId = useId();
+  const [ratingsDrawerOpen, setRatingsDrawerOpen] = useState(false);
   const [neighborhoodsBase, setNeighborhoodsBase] = useState<FeatureCollection<
     Polygon | MultiPolygon,
     NbProps
@@ -281,8 +290,8 @@ export default function App() {
   }, [addressesWithNb]);
 
   return (
-    <div className="flex min-h-full flex-col gap-3 p-3 md:h-[calc(100dvh-2rem)] md:min-h-0 md:flex-row md:gap-4 md:overflow-hidden md:p-4">
-      <div className="flex min-h-[50vh] flex-1 flex-col overflow-y-auto md:min-h-0">
+    <div className="relative flex min-h-full flex-col gap-3 p-3 md:h-[calc(100dvh-2rem)] md:min-h-0 md:flex-row md:gap-4 md:overflow-hidden md:p-4">
+      <div className="flex min-h-[50vh] min-w-0 flex-1 flex-col overflow-y-auto md:min-h-0">
         <header className="mb-2 shrink-0">
           <h1 className="text-lg font-semibold text-[var(--color-text)] md:text-xl">
             Ashland fireWise Engagement Map
@@ -347,41 +356,72 @@ export default function App() {
         </div>
       </div>
 
-      <NavigationControl
-        ashlandBbox={ASHLAND_BBOX}
-        addressSearch={addressSearch}
-        onAddressSearchChange={setAddressSearch}
-        onClearSelectionHidden={() => setSelectionHiddenByFilter(false)}
-        participantFilter={participantFilter}
-        onParticipantFilter={setParticipantFilter}
-        addressesForMapCount={addressesForMap.length}
-        addressesWithNbCount={addressesWithNb.length}
-        selectionHiddenByFilter={selectionHiddenByFilter}
-        onExportCoverage={exportCoverage}
-        onExportSnapshot={exportSnapshot}
-        cityTotalSites={cityTotalSites}
-        cityEngaged={cityEngaged}
-        cityGraded={cityGraded}
-        cityAbShare={cityAbShare}
-        coverageRows={coverageRows}
-        selectedAddress={selectedAddress}
-        selectedNeighborhoodId={selectedNeighborhoodId}
-        selectedRollup={
-          selectedNeighborhoodId
-            ? rollups.get(selectedNeighborhoodId)
-            : undefined
+      <button
+        type="button"
+        className={`fixed bottom-4 right-4 z-50 min-h-[44px] min-w-[44px] rounded-l-md border border-[var(--color-border)] bg-[var(--color-panel)] px-3 py-2 text-sm font-medium text-[var(--color-text)] shadow-lg transition-[right] duration-300 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 motion-reduce:transition-none md:bottom-auto md:top-1/2 md:-translate-y-1/2 ${
+          ratingsDrawerOpen
+            ? "md:right-[calc(1rem+20rem)]"
+            : "md:right-4"
+        }`}
+        aria-expanded={ratingsDrawerOpen}
+        aria-controls={ratingsDrawerId}
+        aria-label={
+          ratingsDrawerOpen
+            ? "Hide ratings and filters panel"
+            : "Show ratings and filters panel"
         }
-        selectedNeighborhoodName={selectedNeighborhoodName}
-        onSelectAddressId={setSelectedAddressId}
-        onSelectNeighborhoodId={setSelectedNeighborhoodId}
-        onSetParticipantType={setParticipantType}
-        onSetAssessmentTool={setAssessmentTool}
-        onSetGrade={setGrade}
-        onBumpEngagement={bumpEngagement}
-        addressesWithNb={addressesWithNb}
-        showPotentialFireBreakLinks={showPotentialFireBreakLinks}
-        onShowPotentialFireBreakLinksChange={setShowPotentialFireBreakLinks}
-      />
+        onClick={() => setRatingsDrawerOpen((o) => !o)}
+      >
+        {ratingsDrawerOpen ? "Hide" : "Panel"}
+      </button>
+
+      <aside
+        id={ratingsDrawerId}
+        className={`fixed bottom-0 right-0 top-0 z-40 flex w-full max-w-80 flex-col bg-[var(--color-surface)] shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none md:bottom-4 md:right-4 md:top-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)] md:rounded-l-lg md:border md:border-[var(--color-border)] ${
+          ratingsDrawerOpen ? "translate-x-0" : "translate-x-full"
+        } `}
+        aria-hidden={!ratingsDrawerOpen}
+        aria-label="Ratings, filters, and city summary"
+        inert={!ratingsDrawerOpen}
+      >
+        <div className="min-h-0 flex-1 overflow-hidden p-3 pt-4 md:p-2 md:pt-3">
+          <NavigationControl
+            ashlandBbox={ASHLAND_BBOX}
+            addressSearch={addressSearch}
+            onAddressSearchChange={setAddressSearch}
+            onClearSelectionHidden={() => setSelectionHiddenByFilter(false)}
+            participantFilter={participantFilter}
+            onParticipantFilter={setParticipantFilter}
+            addressesForMapCount={addressesForMap.length}
+            addressesWithNbCount={addressesWithNb.length}
+            selectionHiddenByFilter={selectionHiddenByFilter}
+            onExportCoverage={exportCoverage}
+            onExportSnapshot={exportSnapshot}
+            cityTotalSites={cityTotalSites}
+            cityEngaged={cityEngaged}
+            cityGraded={cityGraded}
+            cityAbShare={cityAbShare}
+            coverageRows={coverageRows}
+            selectedAddress={selectedAddress}
+            selectedNeighborhoodId={selectedNeighborhoodId}
+            selectedRollup={
+              selectedNeighborhoodId
+                ? rollups.get(selectedNeighborhoodId)
+                : undefined
+            }
+            selectedNeighborhoodName={selectedNeighborhoodName}
+            onSelectAddressId={setSelectedAddressId}
+            onSelectNeighborhoodId={setSelectedNeighborhoodId}
+            onSetParticipantType={setParticipantType}
+            onSetAssessmentTool={setAssessmentTool}
+            onSetGrade={setGrade}
+            onBumpEngagement={bumpEngagement}
+            addressesWithNb={addressesWithNb}
+            showPotentialFireBreakLinks={showPotentialFireBreakLinks}
+            onShowPotentialFireBreakLinksChange={setShowPotentialFireBreakLinks}
+          />
+        </div>
+      </aside>
     </div>
   );
 }
