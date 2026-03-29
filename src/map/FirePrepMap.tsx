@@ -11,27 +11,11 @@ import { Protocol } from "pmtiles";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { ASHLAND_BBOX } from "../config/regions";
 import { buildOvertureStyle } from "./overture-style";
-import { addressesToFeatureCollection } from "./addresses-geojson";
 import type { AddressRecord } from "../features/addresses/types";
+import { gradeToMapColor } from "../lib/rating-colors";
+import { PARTICIPANT_ACCENT_HEX } from "../lib/participant-colors";
 
 const MAP_CONTAINER_ID = "fire-prep-map";
-
-const PARTICIPANT_STROKE_WIDTH: maplibregl.DataDrivenPropertyValueSpecification<number> =
-  [
-    "match",
-    ["get", "participantType"],
-    "residential",
-    2.5,
-    "business",
-    3.25,
-    "institution",
-    3.25,
-    "hoa",
-    2.75,
-    "property_manager",
-    3.25,
-    2,
-  ] as maplibregl.DataDrivenPropertyValueSpecification<number>;
 
 /** Clamp address extents to Ashland study area; expand point-like sets slightly. */
 function clampedBoundsFromAddresses(
@@ -69,41 +53,28 @@ function clampedBoundsFromAddresses(
   ];
 }
 
-/** Larger circles when zoomed in; selected feature gets a bigger radius at each zoom. */
-function circleRadiusPaint(
-  selectedId: string | null,
-): maplibregl.DataDrivenPropertyValueSpecification<number> {
-  const sid = selectedId ?? "";
-  return [
-    "case",
-    ["==", ["get", "id"], sid],
-    [
-      "interpolate",
-      ["linear"],
-      ["zoom"],
-      11,
-      10,
-      14,
-      16,
-      17,
-      22,
-      19,
-      28,
-    ],
-    [
-      "interpolate",
-      ["linear"],
-      ["zoom"],
-      11,
-      4,
-      14,
-      7,
-      17,
-      12,
-      19,
-      16,
-    ],
-  ] as maplibregl.DataDrivenPropertyValueSpecification<number>;
+function buildAddressMarkerElement(
+  a: AddressRecord,
+  selected: boolean,
+): HTMLButtonElement {
+  const fill = gradeToMapColor(a.grade);
+  const ring = PARTICIPANT_ACCENT_HEX[a.participantType];
+  const size = selected ? 22 : 14;
+  const ringW = selected ? 2.5 : 2;
+  const el = document.createElement("button");
+  el.type = "button";
+  el.setAttribute("aria-label", `${a.label}, preparedness ${a.grade ?? "ungraded"}`);
+  el.style.width = `${size}px`;
+  el.style.height = `${size}px`;
+  el.style.borderRadius = "50%";
+  el.style.background = fill;
+  el.style.border = `${ringW}px solid ${ring}`;
+  el.style.padding = "0";
+  el.style.cursor = "pointer";
+  el.style.boxSizing = "border-box";
+  el.style.display = "block";
+  el.style.boxShadow = "0 1px 3px rgba(0,0,0,0.35)";
+  return el;
 }
 
 export type FirePrepMapProps = {
@@ -115,6 +86,8 @@ export type FirePrepMapProps = {
   selectedId: string | null;
   onSelectAddress: (id: string | null) => void;
   onSelectNeighborhood: (id: string | null) => void;
+  /** Fired once GeoJSON overlays exist; use to fit bounds when the map was not ready on first parent effect. */
+  onOverlayReady?: () => void;
 };
 
 export type FirePrepMapHandle = {
@@ -123,17 +96,27 @@ export type FirePrepMapHandle = {
 
 export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
   function FirePrepMap(
-    { neighborhoods, addresses, selectedId, onSelectAddress, onSelectNeighborhood },
+    {
+      neighborhoods,
+      addresses,
+      selectedId,
+      onSelectAddress,
+      onSelectNeighborhood,
+      onOverlayReady,
+    },
     ref,
   ) {
     const mapRef = useRef<maplibregl.Map | null>(null);
-    const selectedIdRef = useRef(selectedId);
-    selectedIdRef.current = selectedId;
+
+    const neighborhoodsRef = useRef(neighborhoods);
+    neighborhoodsRef.current = neighborhoods;
 
     const onSelectAddressRef = useRef(onSelectAddress);
     onSelectAddressRef.current = onSelectAddress;
     const onSelectNeighborhoodRef = useRef(onSelectNeighborhood);
     onSelectNeighborhoodRef.current = onSelectNeighborhood;
+    const onOverlayReadyRef = useRef(onOverlayReady);
+    onOverlayReadyRef.current = onOverlayReady;
 
     useImperativeHandle(
       ref,
@@ -158,7 +141,7 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
         style: buildOvertureStyle(),
         bounds: ASHLAND_BBOX,
         fitBoundsOptions: { padding: 36, duration: 0 },
-        minZoom: 10,
+        minZoom: 8,
         maxZoom: 19,
         attributionControl: false,
       });
@@ -181,7 +164,13 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
         "bottom-right",
       );
 
-      map.on("load", () => {
+      /**
+       * Inline styles can finish loading before `map.on("load", …)` runs, so the
+       * event is never fired. Always run overlay setup when the style is ready.
+       */
+      const installNeighborhoodOverlays = () => {
+        if (map.getSource("neighborhoods")) return;
+
         map.addSource("neighborhoods", {
           type: "geojson",
           data: { type: "FeatureCollection", features: [] },
@@ -206,31 +195,6 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
           },
         });
 
-        map.addSource("addresses", {
-          type: "geojson",
-          data: addressesToFeatureCollection([]),
-        });
-        map.addLayer({
-          id: "addresses-circle",
-          type: "circle",
-          source: "addresses",
-          paint: {
-            "circle-radius": circleRadiusPaint(selectedIdRef.current),
-            "circle-color": ["get", "gradeColor"],
-            "circle-stroke-width": PARTICIPANT_STROKE_WIDTH,
-            "circle-stroke-color": ["get", "participantStroke"],
-          },
-        });
-
-        map.on("click", "addresses-circle", (e) => {
-          const f = e.features?.[0];
-          const id = f?.properties?.id as string | undefined;
-          if (id) {
-            onSelectAddressRef.current(id);
-            onSelectNeighborhoodRef.current(null);
-          }
-        });
-
         map.on("click", "neighborhoods-fill", (e) => {
           const f = e.features?.[0];
           const id = f?.properties?.id as string | undefined;
@@ -242,7 +206,7 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
 
         map.on("click", (e) => {
           const hits = map.queryRenderedFeatures(e.point, {
-            layers: ["addresses-circle", "neighborhoods-fill"],
+            layers: ["neighborhoods-fill"],
           });
           if (hits.length === 0) {
             onSelectAddressRef.current(null);
@@ -250,21 +214,24 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
           }
         });
 
-        map.on("mouseenter", "addresses-circle", () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", "addresses-circle", () => {
-          map.getCanvas().style.cursor = "";
-        });
         map.on("mouseenter", "neighborhoods-fill", () => {
           map.getCanvas().style.cursor = "pointer";
         });
         map.on("mouseleave", "neighborhoods-fill", () => {
           map.getCanvas().style.cursor = "";
         });
-      });
+
+        const nSrc = map.getSource("neighborhoods") as maplibregl.GeoJSONSource;
+        const nb = neighborhoodsRef.current;
+        if (nSrc && nb) nSrc.setData(nb);
+
+        queueMicrotask(() => onOverlayReadyRef.current?.());
+      };
 
       mapRef.current = map;
+
+      if (map.isStyleLoaded()) installNeighborhoodOverlays();
+      else map.once("load", installNeighborhoodOverlays);
 
       return () => {
         map.remove();
@@ -273,34 +240,50 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       };
     }, []);
 
-    const refreshLayers = useCallback(() => {
+    const refreshNeighborhoodLayer = useCallback(() => {
       const map = mapRef.current;
       if (!map?.isStyleLoaded()) return;
 
       const nSrc = map.getSource("neighborhoods") as maplibregl.GeoJSONSource;
-      const aSrc = map.getSource("addresses") as maplibregl.GeoJSONSource;
       if (nSrc && neighborhoods) nSrc.setData(neighborhoods);
-      if (aSrc) {
-        aSrc.setData(addressesToFeatureCollection(addresses));
-        if (map.getLayer("addresses-circle")) {
-          map.setPaintProperty(
-            "addresses-circle",
-            "circle-radius",
-            circleRadiusPaint(selectedId),
-          );
-        }
-      }
-    }, [neighborhoods, addresses, selectedId]);
+    }, [neighborhoods]);
 
     useEffect(() => {
       if (!mapRef.current) return;
       const map = mapRef.current;
       if (map.isStyleLoaded()) {
-        refreshLayers();
+        refreshNeighborhoodLayer();
         return;
       }
-      map.once("load", refreshLayers);
-    }, [refreshLayers]);
+      map.once("load", refreshNeighborhoodLayer);
+    }, [refreshNeighborhoodLayer]);
+
+    /** DOM markers sit above the WebGL canvas so they are not covered by neighborhood fills and avoid circle-layer GPU quirks. */
+    useEffect(() => {
+      const map = mapRef.current;
+      if (!map) return;
+
+      const markers: maplibregl.Marker[] = [];
+
+      for (const a of addresses) {
+        const selected = a.id === selectedId;
+        const el = buildAddressMarkerElement(a, selected);
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          onSelectAddressRef.current(a.id);
+          onSelectNeighborhoodRef.current(null);
+        });
+
+        const marker = new maplibregl.Marker({ element: el, anchor: "center" })
+          .setLngLat([a.lng, a.lat])
+          .addTo(map);
+        markers.push(marker);
+      }
+
+      return () => {
+        for (const m of markers) m.remove();
+      };
+    }, [addresses, selectedId]);
 
     return (
       <div

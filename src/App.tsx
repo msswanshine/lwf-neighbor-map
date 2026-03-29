@@ -15,11 +15,8 @@ import {
   PARTICIPANT_LABELS,
   PARTICIPANT_ORDER,
 } from "./features/addresses/types";
-import {
-  loadAddressesFromStorage,
-  mergeGradeAndEngagement,
-  saveAddressesToStorage,
-} from "./features/addresses/storage";
+import { getBundledSeedAddresses } from "./features/addresses/initial-addresses";
+import { mergeGradeAndEngagement } from "./features/addresses/storage";
 import {
   addressesToSnapshotCsv,
   computeNeighborhoodCoverage,
@@ -88,8 +85,8 @@ export default function App() {
     Polygon | MultiPolygon,
     NbProps
   > | null>(null);
-  const [addressesPersisted, setAddressesPersisted] = useState(() =>
-    loadAddressesFromStorage(),
+  const [addressesPersisted, setAddressesPersisted] = useState(
+    getBundledSeedAddresses,
   );
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState<
@@ -192,6 +189,12 @@ export default function App() {
   const addressesForFitRef = useRef(addressesForFit);
   addressesForFitRef.current = addressesForFit;
 
+  const onMapOverlayReady = useCallback(() => {
+    const addrs = addressesForFitRef.current;
+    if (!addrs.length) return;
+    mapRef.current?.fitToAddresses(addrs);
+  }, []);
+
   useEffect(() => {
     const addrs = addressesForFitRef.current;
     if (!addrs.length) return;
@@ -200,7 +203,6 @@ export default function App() {
 
   const persist = useCallback((next: typeof addressesPersisted) => {
     setAddressesPersisted(next);
-    saveAddressesToStorage(next);
   }, []);
 
   const setGrade = useCallback(
@@ -276,16 +278,16 @@ export default function App() {
             Ashland fire preparedness awareness
           </h1>
           <p className="max-w-prose text-sm text-[var(--color-muted)]">
-            Demo parcel points in{" "}
+            Sites load from{" "}
             <code className="rounded bg-[var(--color-panel)] px-1 text-xs">
               src/data/addresses-ashland-seed.json
             </code>{" "}
-            (replace with county export). Neighborhoods:{" "}
+            (edit that file and refresh; UI changes are not saved). Neighborhoods:{" "}
             <code className="rounded bg-[var(--color-panel)] px-1 text-xs">
               public/data/neighborhoods-ashland.geojson
             </code>
-            . Zoom to street level for circles and Overture building footprints
-            (zoom 15+). Use locate control to center on your position.
+            . Site dots use grade fill (slate = ungraded). Zoom to street level
+            for Overture building footprints (zoom 15+). Use locate control to center on your position.
           </p>
         </header>
         <div className="min-h-[280px] flex-1">
@@ -297,6 +299,7 @@ export default function App() {
               selectedId={selectedAddressId}
               onSelectAddress={setSelectedAddressId}
               onSelectNeighborhood={setSelectedNeighborhoodId}
+              onOverlayReady={onMapOverlayReady}
             />
           ) : (
             <div
