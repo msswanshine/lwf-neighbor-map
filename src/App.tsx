@@ -271,6 +271,8 @@ export default function App() {
             <FirePrepMap
               ref={mapRef}
               addresses={addressesForMap}
+              neighborhoods={neighborhoodsBase}
+              selectedNeighborhoodId={selectedNeighborhoodId}
               selectedId={selectedAddressId}
               onSelectAddress={setSelectedAddressId}
               onSelectNeighborhood={setSelectedNeighborhoodId}
