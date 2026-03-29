@@ -209,30 +209,33 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     }, []);
 
     /**
-     * Same pattern as zone tint updates: layout phase + wait for GeoJSON worker + repaint so
-     * dashed links track A/B grade edits immediately (plain useEffect setData could lag a frame).
+     * Zone tints + fire-break links both use GeoJSON `setData(..., true)`. Running those updates
+     * in two separate layout effects queues parallel worker jobs and MapLibre can apply/stale
+     * them in the wrong order — zone washes stop tracking grade edits. Run neighborhood `setData`
+     * first, then high-grade links after it completes, then selection paint + repaint.
      */
     useLayoutEffect(() => {
       const map = mapRef.current;
       if (!map?.isStyleLoaded()) return;
-      const src = map.getSource(HIGH_GRADE_LINKS_SOURCE_ID);
-      if (!src || !("setData" in src)) return;
-      const data = buildHighGradeProximityLinks(addresses);
-      const g = src as maplibregl.GeoJSONSource;
-      const pending = g.setData(data, true);
-      void pending?.then(() => map.triggerRepaint()).catch(() => {
-        map.triggerRepaint();
-      });
-    }, [addresses]);
 
-    /** Layout effect: push zone GeoJSON + selection paint before paint so tints track grade edits immediately. */
-    useLayoutEffect(() => {
-      const map = mapRef.current;
-      if (!map?.isStyleLoaded() || !map.getLayer(NEIGHBORHOODS_FILL_LAYER_ID))
+      const pushHighGradeLinks = () => {
+        const linkSrc = map.getSource(HIGH_GRADE_LINKS_SOURCE_ID);
+        if (!linkSrc || !("setData" in linkSrc)) return;
+        const lg = linkSrc as maplibregl.GeoJSONSource;
+        const linkData = buildHighGradeProximityLinks(addresses);
+        const linkPending = lg.setData(linkData, true);
+        void linkPending
+          ?.then(() => map.triggerRepaint())
+          .catch(() => map.triggerRepaint());
+      };
+
+      if (!map.getLayer(NEIGHBORHOODS_FILL_LAYER_ID)) {
+        pushHighGradeLinks();
         return;
+      }
+
       const src = map.getSource(NEIGHBORHOODS_SOURCE_ID);
       const geo = JSON.parse(JSON.stringify(neighborhoods)) as NeighborhoodGeoJson;
-      /** Revision on the collection nudges workers if a diff short-circuits on geometry-only heuristics. */
       (geo as { tintRevision?: string }).tintRevision = neighborhoodTintRevision;
 
       const applySelectionPaint = () => {
@@ -257,13 +260,21 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       if (src && "setData" in src) {
         const g = src as maplibregl.GeoJSONSource;
         const pending = g.setData(geo, true);
-        void pending?.then(applySelectionPaint).catch(() => {
-          applySelectionPaint();
-        });
+        void pending
+          ?.then(() => {
+            applySelectionPaint();
+            pushHighGradeLinks();
+          })
+          .catch(() => {
+            applySelectionPaint();
+            pushHighGradeLinks();
+          });
       } else {
         applySelectionPaint();
+        pushHighGradeLinks();
       }
     }, [
+      addresses,
       neighborhoods,
       neighborhoodTintRevision,
       selectedNeighborhoodId,
