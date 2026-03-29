@@ -359,7 +359,7 @@ export default function App() {
 
       <button
         type="button"
-        className={`fixed bottom-4 right-4 z-50 min-h-[44px] min-w-[44px] rounded-l-md border border-[var(--color-border)] bg-[var(--color-panel)] px-3 py-2 text-sm font-medium text-[var(--color-text)] shadow-lg transition-[right] duration-300 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 motion-reduce:transition-none md:bottom-auto md:top-1/2 md:-translate-y-1/2 ${
+        className={`fixed right-4 top-[calc(20dvh+40px)] z-50 min-h-[44px] min-w-[44px] rounded-l-md border border-[var(--color-border)] bg-[var(--color-panel)] px-3 py-2 text-sm font-medium text-[var(--color-text)] shadow-lg transition-[right] duration-300 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 motion-reduce:transition-none ${
           ratingsDrawerOpen
             ? "md:right-[calc(1rem+20rem)]"
             : "md:right-4"
@@ -378,8 +378,10 @@ export default function App() {
 
       <aside
         id={ratingsDrawerId}
-        className={`fixed bottom-0 right-0 top-0 z-40 flex w-full max-w-80 flex-col bg-[var(--color-surface)] shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none md:bottom-4 md:right-4 md:top-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)] md:rounded-l-lg md:border md:border-[var(--color-border)] ${
-          ratingsDrawerOpen ? "translate-x-0" : "translate-x-full"
+        className={`fixed bottom-0 right-0 top-0 z-40 flex w-full max-w-80 flex-col bg-[var(--color-surface)] shadow-2xl transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none md:bottom-4 md:right-4 md:top-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)] md:rounded-l-lg md:border md:border-[var(--color-border)] ${
+          ratingsDrawerOpen
+            ? "translate-x-0 opacity-100"
+            : "pointer-events-none translate-x-full opacity-0"
         } `}
         aria-hidden={!ratingsDrawerOpen}
         aria-label="Ratings, filters, and city summary"
