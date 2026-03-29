@@ -104,7 +104,7 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
         container: MAP_CONTAINER_ID,
         style: buildOvertureStyle(),
         bounds: ASHLAND_BBOX,
-        fitBoundsOptions: { padding: 36, duration: 0 },
+        fitBoundsOptions: { padding: 52, duration: 0 },
         minZoom: 8,
         maxZoom: 19,
         attributionControl: false,
@@ -300,10 +300,10 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     }, [addresses, selectedId]);
 
     return (
-      <div className="relative h-full w-full min-h-[420px] rounded-lg border border-[var(--color-border)]">
+      <div className="relative h-full min-h-[50vh] w-full rounded-lg border border-[var(--color-border)] md:min-h-0">
         <div
           id={MAP_CONTAINER_ID}
-          className="h-full w-full min-h-[420px] rounded-[inherit]"
+          className="h-full min-h-[50vh] w-full rounded-[inherit] md:min-h-0"
           role="application"
           aria-label="Interactive map of Ashland with preparedness ratings"
         />

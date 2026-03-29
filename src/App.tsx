@@ -27,13 +27,8 @@ import {
 } from "./features/city-metrics";
 import { abShareToWashTier } from "./lib/map-ab-share-wash";
 import { NavigationControl } from "./components/NavigationControl";
-import {
-  FirePrepMap,
-  type FirePrepMapHandle,
-} from "./map/FirePrepMap";
+import { FirePrepMap } from "./map/FirePrepMap";
 import type { NeighborhoodGeoJson } from "./map/neighborhood-layers";
-import { useDebouncedValue } from "./hooks/useDebouncedValue";
-
 type NbProps = { id: string; name: string };
 
 function filterAddressesForMap(
@@ -60,7 +55,18 @@ function filterAddressesForMap(
 
 export default function App() {
   const ratingsDrawerId = useId();
+  const goalsDialogTitleId = useId();
   const [ratingsDrawerOpen, setRatingsDrawerOpen] = useState(false);
+  const [goalsPopupOpen, setGoalsPopupOpen] = useState(false);
+  const goalsTriggerRef = useRef<HTMLButtonElement>(null);
+  const goalsDialogRef = useRef<HTMLDivElement>(null);
+  const goalsCloseRef = useRef<HTMLButtonElement>(null);
+
+  const closeGoalsPopup = useCallback(() => {
+    setGoalsPopupOpen(false);
+    queueMicrotask(() => goalsTriggerRef.current?.focus());
+  }, []);
+
   const [neighborhoodsBase, setNeighborhoodsBase] = useState<FeatureCollection<
     Polygon | MultiPolygon,
     NbProps
@@ -76,8 +82,6 @@ export default function App() {
     ParticipantType | "all"
   >("all");
   const [addressSearch, setAddressSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(addressSearch, 220);
-  const mapRef = useRef<FirePrepMapHandle>(null);
   const [selectionHiddenByFilter, setSelectionHiddenByFilter] = useState(false);
   const [showPotentialFireBreakLinks, setShowPotentialFireBreakLinks] =
     useState(false);
@@ -168,16 +172,6 @@ export default function App() {
     [addressesWithNb, participantFilter, addressSearch],
   );
 
-  const addressesForFit = useMemo(
-    () =>
-      filterAddressesForMap(
-        addressesWithNb,
-        participantFilter,
-        debouncedSearch,
-      ),
-    [addressesWithNb, participantFilter, debouncedSearch],
-  );
-
   useEffect(() => {
     if (!selectedAddressId) return;
     if (!addressesForMap.some((a) => a.id === selectedAddressId)) {
@@ -189,21 +183,6 @@ export default function App() {
   useEffect(() => {
     if (selectedAddressId) setSelectionHiddenByFilter(false);
   }, [selectedAddressId]);
-
-  const addressesForFitRef = useRef(addressesForFit);
-  addressesForFitRef.current = addressesForFit;
-
-  const onMapOverlayReady = useCallback(() => {
-    const addrs = addressesForFitRef.current;
-    if (!addrs.length) return;
-    mapRef.current?.fitToAddresses(addrs);
-  }, []);
-
-  useEffect(() => {
-    const addrs = addressesForFitRef.current;
-    if (!addrs.length) return;
-    mapRef.current?.fitToAddresses(addrs);
-  }, [participantFilter, debouncedSearch]);
 
   const persist = useCallback((next: typeof addressesPersisted) => {
     setAddressesPersisted(next);
@@ -289,10 +268,57 @@ export default function App() {
     return { total, abCount, pct, tier };
   }, [addressesWithNb]);
 
+  useEffect(() => {
+    if (!goalsPopupOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeGoalsPopup();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [goalsPopupOpen, closeGoalsPopup]);
+
+  useEffect(() => {
+    if (!goalsPopupOpen) return;
+    goalsCloseRef.current?.focus();
+  }, [goalsPopupOpen]);
+
+  useEffect(() => {
+    if (!goalsPopupOpen) return;
+    const node = goalsDialogRef.current;
+    if (!node) return;
+    const selector =
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const focusables = [...node.querySelectorAll<HTMLElement>(selector)].filter(
+        (el) => !el.hasAttribute("inert"),
+      );
+      if (focusables.length === 0) return;
+      if (focusables.length === 1) {
+        e.preventDefault();
+        focusables[0].focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    node.addEventListener("keydown", onKeyDown);
+    return () => node.removeEventListener("keydown", onKeyDown);
+  }, [goalsPopupOpen]);
+
   return (
     <div className="relative flex min-h-full flex-col gap-3 p-3 md:h-[calc(100dvh-2rem)] md:min-h-0 md:flex-row md:gap-4 md:overflow-hidden md:p-4">
-      <div className="flex min-h-[50vh] min-w-0 flex-1 flex-col overflow-y-auto md:min-h-0">
-        <header className="mb-2 shrink-0">
+      <div className="flex min-h-[50vh] min-w-0 flex-1 flex-col overflow-y-auto md:min-h-0 md:overflow-hidden">
+        <header className="mb-1 shrink-0 md:mb-2">
           <h1 className="text-lg font-semibold text-[var(--color-text)] md:text-xl">
             Ashland fireWise Engagement Map
           </h1>
@@ -302,10 +328,9 @@ export default function App() {
             type.
           </p>
         </header>
-        <div className="min-h-[420px] flex-1">
+        <div className="flex min-h-[50vh] flex-1 flex-col md:min-h-0">
           {neighborhoodsWithWash ? (
             <FirePrepMap
-              ref={mapRef}
               addresses={addressesForMap}
               neighborhoods={neighborhoodsWithWash}
               neighborhoodTintRevision={neighborhoodTintRevision}
@@ -313,46 +338,16 @@ export default function App() {
               selectedId={selectedAddressId}
               onSelectAddress={setSelectedAddressId}
               onSelectNeighborhood={setSelectedNeighborhoodId}
-              onOverlayReady={onMapOverlayReady}
               showPotentialFireBreakLinks={showPotentialFireBreakLinks}
             />
           ) : (
             <div
-              className="flex h-full min-h-[420px] items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] text-[var(--color-muted)]"
+              className="flex h-full min-h-[50vh] items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] text-[var(--color-muted)] md:min-h-0"
               role="status"
             >
               Loading evacuation zone boundaries…
             </div>
           )}
-        </div>
-        <div className="mt-3 max-w-prose shrink-0 text-sm text-[var(--color-muted)]">
-          <strong className="text-[var(--color-text)]">Goals:</strong>
-          <ul className="mt-1 list-inside list-disc">
-            <li>
-              Easily identify addresses who have opted in to the fireWise program
-              and their preparedness grade
-            </li>
-            <li>Identify areas of least preparedness to maximize outreach</li>
-            <li>
-              Enable evacuation zones to help build urban firebreak areas by working
-              together clumping A rated properties
-            </li>
-            <li>
-              Help Ashland become a model for urban fire preparedness by being a
-              city wide fire break by design.
-            </li>
-          </ul>
-          <strong className="mt-3 block text-[var(--color-text)]">Features:</strong>
-          <ul className="mt-1 list-inside list-disc">
-            <li>Map showing all addresses who have opted in to the fireWise program</li>
-            <li>Grades of fireWise preparedness</li>
-            <li>Participant type</li>
-            <li>Evacuation zone rollups</li>
-            <li>
-              Enable evacuation zones to help build urban firebreak areas by lining up
-              A rated properties
-            </li>
-          </ul>
         </div>
       </div>
 
@@ -422,6 +417,91 @@ export default function App() {
           />
         </div>
       </aside>
+
+      <button
+        ref={goalsTriggerRef}
+        type="button"
+        className={`fixed bottom-4 left-4 z-[45] min-h-[44px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-3 py-2 text-sm font-medium text-[var(--color-text)] shadow-lg transition-opacity duration-300 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 motion-reduce:transition-none motion-reduce:duration-0 ${
+          goalsPopupOpen ? "pointer-events-none opacity-0" : "opacity-100"
+        }`}
+        aria-expanded={goalsPopupOpen}
+        aria-haspopup="dialog"
+        onClick={() => setGoalsPopupOpen(true)}
+      >
+        Goals & features
+      </button>
+
+      <div
+        role="presentation"
+        className={`fixed inset-0 z-[43] bg-black/45 transition-opacity duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0 ${
+          goalsPopupOpen
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
+        }`}
+        aria-hidden={!goalsPopupOpen}
+        onClick={closeGoalsPopup}
+      />
+
+      <div
+        ref={goalsDialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={goalsDialogTitleId}
+        aria-hidden={!goalsPopupOpen}
+        className={`fixed bottom-16 left-4 z-[44] max-h-[min(72vh,32rem)] w-[min(calc(100vw-2rem),28rem)] overflow-y-auto overscroll-y-contain rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0 ${
+          goalsPopupOpen
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-2 opacity-0"
+        } `}
+        inert={!goalsPopupOpen}
+      >
+        <div className="flex items-start justify-between gap-3 p-4 pb-2">
+          <h2
+            id={goalsDialogTitleId}
+            className="text-base font-semibold leading-snug text-[var(--color-text)]"
+          >
+            Goals & features
+          </h2>
+          <button
+            ref={goalsCloseRef}
+            type="button"
+            className="shrink-0 rounded border border-[var(--color-border)] px-2 py-2 text-xs font-medium text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+            aria-label="Close goals and features"
+            onClick={closeGoalsPopup}
+          >
+            Close
+          </button>
+        </div>
+        <div className="px-4 pb-4 pt-0 text-sm text-[var(--color-muted)]">
+          <strong className="text-[var(--color-text)]">Goals:</strong>
+          <ul className="mt-1 list-inside list-disc">
+            <li>
+              Easily identify addresses who have opted in to the fireWise program
+              and their preparedness grade
+            </li>
+            <li>Identify areas of least preparedness to maximize outreach</li>
+            <li>
+              Enable evacuation zones to help build urban firebreak areas by working
+              together clumping A rated properties
+            </li>
+            <li>
+              Help Ashland become a model for urban fire preparedness by being a city
+              wide fire break by design.
+            </li>
+          </ul>
+          <strong className="mt-3 block text-[var(--color-text)]">Features:</strong>
+          <ul className="mt-1 list-inside list-disc">
+            <li>Map showing all addresses who have opted in to the fireWise program</li>
+            <li>Grades of fireWise preparedness</li>
+            <li>Participant type</li>
+            <li>Evacuation zone rollups</li>
+            <li>
+              Enable evacuation zones to help build urban firebreak areas by lining up
+              A rated properties
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
