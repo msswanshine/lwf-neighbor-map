@@ -1,3 +1,4 @@
+import { useId, useState, type ReactNode } from "react";
 import type {
   AddressRecord,
   FireAssessmentTool,
@@ -98,11 +99,8 @@ export function NavigationControl(props: NavigationControlProps) {
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-y-contain pr-0.5 [scrollbar-gutter:stable]">
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-          <h2 className="text-sm font-semibold text-[var(--color-text)]">
-            Find on map
-          </h2>
-          <label className="mt-2 block text-xs text-[var(--color-muted)]">
+        <AsideCollapsibleSection sectionId="aside-find-on-map" title="Find on map">
+          <label className="block text-xs text-[var(--color-muted)]">
             Search address or parcel id
             <input
               type="search"
@@ -158,33 +156,32 @@ export function NavigationControl(props: NavigationControlProps) {
               Previous selection was hidden by the current filter or search.
             </p>
           ) : null}
-        </div>
+        </AsideCollapsibleSection>
 
         <Legend />
 
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-[var(--color-text)]">
-              City summary
-            </h2>
-            <div className="flex flex-wrap gap-1">
-              <button
-                type="button"
-                className="rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                onClick={onExportCoverage}
-              >
-                Export coverage CSV
-              </button>
-              <button
-                type="button"
-                className="rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                onClick={onExportSnapshot}
-              >
-                Export addresses CSV
-              </button>
-            </div>
+        <AsideCollapsibleSection
+          sectionId="aside-city-summary"
+          title="City summary"
+          defaultOpen={false}
+        >
+          <div className="flex flex-wrap gap-1">
+            <button
+              type="button"
+              className="rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              onClick={onExportCoverage}
+            >
+              Export coverage CSV
+            </button>
+            <button
+              type="button"
+              className="rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              onClick={onExportSnapshot}
+            >
+              Export addresses CSV
+            </button>
           </div>
-          <p className="mt-2 text-xs text-[var(--color-muted)]">
+          <p className="mt-3 text-xs text-[var(--color-muted)]">
             Engagement count &gt; 0 is used as a simple stand-in for “opted in /
             touched by an affiliate app.” Metrics use <strong>all</strong> seeded
             sites; map dots respect the type filter and search.
@@ -292,12 +289,13 @@ export function NavigationControl(props: NavigationControlProps) {
               . For emergency instructions, follow official alerts—not this demo map.
             </p>
           </div>
-        </div>
+        </AsideCollapsibleSection>
 
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-          <h2 className="text-sm font-semibold text-[var(--color-text)]">
-            Specific Property Details
-          </h2>
+        <AsideCollapsibleSection
+          sectionId="aside-property-details"
+          title="Specific Property Details"
+          defaultOpen={false}
+        >
           {!selectedAddress && !selectedNeighborhoodId && (
             <p className="mt-2 text-sm text-[var(--color-muted)]">
               Click a property marker for grades and participant type, or a
@@ -468,13 +466,14 @@ export function NavigationControl(props: NavigationControlProps) {
               </ul>
             </div>
           )}
-        </div>
+        </AsideCollapsibleSection>
 
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-          <h2 className="text-sm font-semibold text-[var(--color-text)]">
-            Explore potential fire breaks.
-          </h2>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">
+        <AsideCollapsibleSection
+          sectionId="aside-fire-breaks"
+          title="Explore potential fire breaks."
+          defaultOpen={false}
+        >
+          <p className="text-xs text-[var(--color-muted)]">
             Green lines connect A- or B-rated sites that are within about one
             kilometer of each other (straight-line distance), among sites
             currently shown on the map.
@@ -490,11 +489,17 @@ export function NavigationControl(props: NavigationControlProps) {
             />
             <span>Show connection lines on map</span>
           </label>
-        </div>
+        </AsideCollapsibleSection>
 
-        <p className="text-xs text-[var(--color-muted)]">
-          View: [{ashlandBbox.join(", ")}] — west, south, east, north.
-        </p>
+        <AsideCollapsibleSection
+          sectionId="aside-map-bounds"
+          title="Map view bounds"
+          defaultOpen={false}
+        >
+          <p className="text-xs text-[var(--color-muted)]">
+            View: [{ashlandBbox.join(", ")}] — west, south, east, north.
+          </p>
+        </AsideCollapsibleSection>
       </div>
     </div>
   );
@@ -529,49 +534,125 @@ function FilterChip(props: {
   );
 }
 
-function Legend() {
+function ChevronIcon(props: { expanded: boolean }) {
+  const { expanded } = props;
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className={`h-4 w-4 shrink-0 transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0 ${
+        expanded ? "rotate-180" : ""
+      }`}
+      aria-hidden
+    >
+      <path
+        fillRule="evenodd"
+        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function AsideCollapsibleSection(props: {
+  sectionId: string;
+  title: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const { sectionId, title, defaultOpen = true, children } = props;
+  const [open, setOpen] = useState(defaultOpen);
+  const headingId = useId();
+  const panelId = `${sectionId}-panel`;
+
   return (
     <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-      <h2 className="text-sm font-semibold text-[var(--color-text)]">Legend</h2>
-      <p className="mt-1 text-xs text-[var(--color-muted)]">
+      <div className="flex flex-nowrap items-center gap-2">
+        <h2
+          id={headingId}
+          className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text)]"
+        >
+          {title}
+        </h2>
+        <button
+          type="button"
+          className="flex min-h-[40px] min-w-[40px] shrink-0 items-center justify-center rounded border border-[var(--color-border)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 motion-reduce:transition-none"
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-labelledby={headingId}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span className="sr-only">
+            {open ? "Collapse" : "Expand"} {title}
+          </span>
+          <ChevronIcon expanded={open} />
+        </button>
+      </div>
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:duration-0 ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div
+            id={panelId}
+            className="pt-3"
+            inert={!open}
+            aria-hidden={!open}
+          >
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Legend() {
+  return (
+    <AsideCollapsibleSection sectionId="aside-legend" title="Legend">
+      <p className="text-xs text-[var(--color-muted)]">
         <strong>Marker fill</strong> = preparedness grade; <strong>ring</strong>{" "}
         = participant type. Zone polygons show A/B preparedness tier wash (same
         scale as the city summary).
       </p>
-      <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <ul className="mt-2 grid grid-cols-4 gap-x-2 gap-y-1 text-[10px] sm:grid-cols-6 sm:text-xs">
         {GRADE_ORDER.map((g) => (
-          <li key={g} className="flex items-center gap-2 text-xs">
+          <li key={g} className="flex min-w-0 items-center gap-1.5">
             <span
-              className="inline-block h-3 w-3 shrink-0 rounded-full border border-[var(--color-border)]"
+              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--color-border)] sm:h-3 sm:w-3"
               style={{ backgroundColor: GRADE_HEX[g] }}
               aria-hidden
             />
-            <span className="text-[var(--color-text)]">{g}</span>
+            <span className="truncate text-[var(--color-text)]">{g}</span>
           </li>
         ))}
-        <li className="flex items-center gap-2 text-xs">
+        <li className="col-span-2 flex min-w-0 items-center gap-1.5 sm:col-span-6">
           <span
-            className="inline-block h-3 w-3 shrink-0 rounded-full border border-[var(--color-border)] bg-[#64748b]"
+            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--color-border)] bg-[#64748b] sm:h-3 sm:w-3"
             aria-hidden
           />
-          <span className="text-[var(--color-text)]">Ungraded / N/A</span>
+          <span className="min-w-0 leading-tight text-[var(--color-text)]">
+            Ungraded / N/A
+          </span>
         </li>
       </ul>
-      <p className="mb-1 mt-3 text-[10px] font-medium text-[var(--color-text)]">
+      <p className="mb-0.5 mt-2 text-[10px] font-medium text-[var(--color-text)]">
         Participant accents (filters)
       </p>
-      <ul className="grid gap-1 text-[10px] text-[var(--color-muted)]">
+      <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] text-[var(--color-muted)]">
         {PARTICIPANT_ORDER.map((p) => (
-          <li key={p} className="flex items-center gap-2">
+          <li key={p} className="flex min-w-0 items-center gap-1.5">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: PARTICIPANT_ACCENT_HEX[p] }}
               aria-hidden
             />
-            {PARTICIPANT_LABELS[p]}
+            <span className="min-w-0 leading-tight">{PARTICIPANT_LABELS[p]}</span>
           </li>
         ))}
       </ul>
-    </div>
+    </AsideCollapsibleSection>
   );
 }
