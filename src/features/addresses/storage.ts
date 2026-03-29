@@ -1,4 +1,9 @@
-import type { AddressPersisted, LetterGrade, ParticipantType } from "./types";
+import type {
+  AddressPersisted,
+  FireAssessmentTool,
+  LetterGrade,
+  ParticipantType,
+} from "./types";
 
 export function mergeGradeAndEngagement(
   list: AddressPersisted[],
@@ -7,6 +12,7 @@ export function mergeGradeAndEngagement(
     grade?: LetterGrade | null;
     engagementCount?: number;
     participantType?: ParticipantType;
+    assessmentTool?: FireAssessmentTool;
   },
 ): AddressPersisted[] {
   return list.map((a) =>
@@ -19,6 +25,9 @@ export function mergeGradeAndEngagement(
             : {}),
           ...(updates.participantType !== undefined
             ? { participantType: updates.participantType }
+            : {}),
+          ...(updates.assessmentTool !== undefined
+            ? { assessmentTool: updates.assessmentTool }
             : {}),
         }
       : a,

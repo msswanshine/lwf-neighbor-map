@@ -5,6 +5,7 @@ import { assignNeighborhoodIds } from "./features/neighborhoods/assign-neighborh
 import { computeNeighborhoodRollups } from "./features/neighborhoods/rollup";
 import type {
   AddressRecord,
+  FireAssessmentTool,
   LetterGrade,
   ParticipantType,
 } from "./features/addresses/types";
@@ -182,6 +183,13 @@ export default function App() {
     [addressesPersisted, persist],
   );
 
+  const setAssessmentTool = useCallback(
+    (id: string, assessmentTool: FireAssessmentTool) => {
+      persist(mergeGradeAndEngagement(addressesPersisted, { id, assessmentTool }));
+    },
+    [addressesPersisted, persist],
+  );
+
   const bumpEngagement = useCallback(
     (id: string) => {
       const cur = findPersistedAddress(addressesPersisted, id);
@@ -213,6 +221,7 @@ export default function App() {
       participantType: a.participantType,
       grade: a.grade ?? "",
       engagementCount: a.engagementCount,
+      assessmentTool: a.assessmentTool,
     }));
     downloadCsv(
       "ashland-address-snapshot.csv",
@@ -334,6 +343,7 @@ export default function App() {
         onSelectAddressId={setSelectedAddressId}
         onSelectNeighborhoodId={setSelectedNeighborhoodId}
         onSetParticipantType={setParticipantType}
+        onSetAssessmentTool={setAssessmentTool}
         onSetGrade={setGrade}
         onBumpEngagement={bumpEngagement}
         addressesWithNb={addressesWithNb}

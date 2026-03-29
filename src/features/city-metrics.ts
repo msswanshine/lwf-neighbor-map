@@ -87,10 +87,11 @@ export function addressesToSnapshotCsv(
     participantType: string;
     grade: string;
     engagementCount: number;
+    assessmentTool: string;
   }[],
 ): string {
   const header =
-    "id,parcel_id,normalized_address,street,neighborhood,participant_type,grade,engagement_count";
+    "id,parcel_id,normalized_address,street,neighborhood,participant_type,grade,engagement_count,assessment_tool";
   const lines = rows.map((r) =>
     [
       escapeCsv(r.id),
@@ -101,6 +102,7 @@ export function addressesToSnapshotCsv(
       escapeCsv(r.participantType),
       r.grade,
       r.engagementCount,
+      escapeCsv(r.assessmentTool),
     ].join(","),
   );
   return [header, ...lines].join("\n");

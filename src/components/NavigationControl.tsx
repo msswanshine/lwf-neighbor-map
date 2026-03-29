@@ -1,5 +1,11 @@
-import type { AddressRecord, LetterGrade, ParticipantType } from "../features/addresses/types";
+import type {
+  AddressRecord,
+  FireAssessmentTool,
+  LetterGrade,
+  ParticipantType,
+} from "../features/addresses/types";
 import {
+  FIRE_ASSESSMENT_TOOL_ORDER,
   PARTICIPANT_LABELS,
   PARTICIPANT_ORDER,
 } from "../features/addresses/types";
@@ -48,6 +54,7 @@ export type NavigationControlProps = {
   onSelectAddressId: (id: string | null) => void;
   onSelectNeighborhoodId: (id: string | null) => void;
   onSetParticipantType: (id: string, t: ParticipantType) => void;
+  onSetAssessmentTool: (id: string, tool: FireAssessmentTool) => void;
   onSetGrade: (id: string, grade: LetterGrade | null) => void;
   onBumpEngagement: (id: string) => void;
   addressesWithNb: AddressRecord[];
@@ -78,6 +85,7 @@ export function NavigationControl(props: NavigationControlProps) {
     onSelectAddressId,
     onSelectNeighborhoodId,
     onSetParticipantType,
+    onSetAssessmentTool,
     onSetGrade,
     onBumpEngagement,
     addressesWithNb,
@@ -274,7 +282,7 @@ export function NavigationControl(props: NavigationControlProps) {
 
         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
           <h2 className="text-sm font-semibold text-[var(--color-text)]">
-            Selection
+            Specific Property Details
           </h2>
           {!selectedAddress && !selectedNeighborhoodId && (
             <p className="mt-2 text-sm text-[var(--color-muted)]">
@@ -318,6 +326,25 @@ export function NavigationControl(props: NavigationControlProps) {
                   {PARTICIPANT_ORDER.map((p) => (
                     <option key={p} value={p}>
                       {PARTICIPANT_LABELS[p]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-xs text-[var(--color-muted)]">
+                Fire risk assessment tool
+                <select
+                  value={selectedAddress.assessmentTool}
+                  onChange={(e) =>
+                    onSetAssessmentTool(
+                      selectedAddress.id,
+                      e.target.value as FireAssessmentTool,
+                    )
+                  }
+                  className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-2 text-sm text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                >
+                  {FIRE_ASSESSMENT_TOOL_ORDER.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
                     </option>
                   ))}
                 </select>
