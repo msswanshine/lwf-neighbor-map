@@ -48,6 +48,18 @@
     "engagementCount": 2
   },
   {
+    "id": "white-rabbit-04",
+    "parcelId": "DEMO-R130121300-005",
+    "normalizedAddress": "5 N MAIN ST SUITE 2 ASHLAND OR 97520",
+    "lat": 42.1983159,
+    "lng": -122.7160530,
+    "label": "5 N Main St, Suite 2",
+    "street": "5 N Main St, Suite 2",
+    "participantType": "business",
+    "grade": "A",
+    "engagementCount": 2
+  },
+  {
     "id": "ash-parcel-helman-05",
     "parcelId": "DEMO-R130121600-022",
     "normalizedAddress": "945 HELMAN ST ASHLAND OR 97520",
