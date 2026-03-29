@@ -6,5 +6,4 @@ export const PARTICIPANT_ACCENT_HEX: Record<ParticipantType, string> = {
   business: "#c084fc",
   institution: "#f472b6",
   hoa: "#fbbf24",
-  property_manager: "#34d399",
 };

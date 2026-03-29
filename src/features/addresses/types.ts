@@ -5,15 +5,13 @@ export type ParticipantType =
   | "residential"
   | "business"
   | "institution"
-  | "hoa"
-  | "property_manager";
+  | "hoa";
 
 export const PARTICIPANT_LABELS: Record<ParticipantType, string> = {
   residential: "Home / residential",
   business: "Business",
   institution: "Institution",
   hoa: "HOA",
-  property_manager: "Property manager",
 };
 
 export const PARTICIPANT_ORDER: ParticipantType[] = [
@@ -21,7 +19,6 @@ export const PARTICIPANT_ORDER: ParticipantType[] = [
   "business",
   "institution",
   "hoa",
-  "property_manager",
 ];
 
 export type AddressRecord = {

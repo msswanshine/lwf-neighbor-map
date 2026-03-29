@@ -23,11 +23,7 @@ import {
   coverageToCsv,
   downloadCsv,
 } from "./features/city-metrics";
-import {
-  gradeToMapColor,
-  GRADE_HEX,
-  GRADE_ORDER,
-} from "./lib/rating-colors";
+import { GRADE_HEX, GRADE_ORDER } from "./lib/rating-colors";
 import { PARTICIPANT_ACCENT_HEX } from "./lib/participant-colors";
 import {
   FirePrepMap,
@@ -57,27 +53,6 @@ function filterAddressesForMap(
       .toLowerCase();
     return hay.includes(q);
   });
-}
-
-function enrichNeighborhoods(
-  raw: FeatureCollection<Polygon | MultiPolygon, NbProps>,
-  rollups: ReturnType<typeof computeNeighborhoodRollups>,
-): FeatureCollection<Polygon | MultiPolygon, NbProps & { rollupColor: string }> {
-  return {
-    ...raw,
-    features: raw.features.map((f) => {
-      const rid = f.properties.id;
-      const r = rollups.get(rid);
-      const color = gradeToMapColor(r?.grade ?? null);
-      return {
-        ...f,
-        properties: {
-          ...f.properties,
-          rollupColor: color,
-        },
-      };
-    }),
-  };
 }
 
 export default function App() {
@@ -141,11 +116,6 @@ export default function App() {
     () => computeNeighborhoodRollups(addressesWithNb, neighborhoodIds),
     [addressesWithNb, neighborhoodIds],
   );
-
-  const neighborhoodsForMap = useMemo(() => {
-    if (!neighborhoodsBase) return null;
-    return enrichNeighborhoods(neighborhoodsBase, rollups);
-  }, [neighborhoodsBase, rollups]);
 
   const coverageRows = useMemo(
     () =>
@@ -275,26 +245,26 @@ export default function App() {
       <div className="flex min-h-[50vh] flex-1 flex-col md:min-h-0">
         <header className="mb-2 shrink-0">
           <h1 className="text-lg font-semibold text-[var(--color-text)] md:text-xl">
-            Ashland fire preparedness awareness
+            Ashland fireWise Engagement Map
           </h1>
           <p className="max-w-prose text-sm text-[var(--color-muted)]">
-            Sites load from{" "}
-            <code className="rounded bg-[var(--color-panel)] px-1 text-xs">
-              src/data/addresses-ashland-seed.json
-            </code>{" "}
-            (edit that file and refresh; UI changes are not saved). Neighborhoods:{" "}
-            <code className="rounded bg-[var(--color-panel)] px-1 text-xs">
-              public/data/neighborhoods-ashland.geojson
-            </code>
-            . Site dots use grade fill (slate = ungraded). Zoom to street level
-            for Overture building footprints (zoom 15+). Use locate control to center on your position.
+            Map showing all addresses who have opted in to the fireWise program engagement map, with grades of fireWise preparedness and participant type.
+            <br />
+            <strong>Goal:</strong> Easily identify addresses who have opted in to the fireWise program and their preparedness grade, while identifying areas of least preparedness to focus efforts of engagement.
+            <br />
+            <strong>Features:</strong>
+            <ul>
+              <li>Map showing all addresses who have opted in to the fireWise program</li>
+              <li>Grades of fireWise preparedness</li>
+              <li>Participant type</li>
+              <li>Neighborhood rollups</li>
+            </ul>
           </p>
         </header>
         <div className="min-h-[280px] flex-1">
-          {neighborhoodsForMap ? (
+          {neighborhoodsBase ? (
             <FirePrepMap
               ref={mapRef}
-              neighborhoods={neighborhoodsForMap}
               addresses={addressesForMap}
               selectedId={selectedAddressId}
               onSelectAddress={setSelectedAddressId}
@@ -455,8 +425,7 @@ export default function App() {
           </h2>
           {!selectedAddress && !selectedNeighborhoodId && (
             <p className="mt-2 text-sm text-[var(--color-muted)]">
-              Click an address for grades and participant type. Click a
-              neighborhood for rollup and address list.{" "}
+              Click a property marker for grades and participant type.{" "}
               <span className="sr-only">Map bounds: Ashland, Oregon.</span>
             </p>
           )}
@@ -643,8 +612,7 @@ function Legend() {
       <h2 className="text-sm font-semibold text-[var(--color-text)]">Legend</h2>
       <p className="mt-1 text-xs text-[var(--color-muted)]">
         <strong>Fill</strong> color = preparedness grade; <strong>ring</strong>{" "}
-        color = participant type (see below). Neighborhood fill = rollup when
-        enough graded sites exist ({MIN_RATED_ADDRESSES_FOR_ROLLUP}+).
+        color = participant type (see below). Map shows property markers only.
       </p>
       <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {GRADE_ORDER.map((g) => (
