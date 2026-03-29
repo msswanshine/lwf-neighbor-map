@@ -143,9 +143,11 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
             visibility: showFireBreakLinksRef.current ? "visible" : "none",
           },
           paint: {
-            "line-color": "#22c55e",
-            "line-width": 5,
-            "line-opacity": 0.9,
+            /** Teal dashed lines — distinct from evacuation-zone outlines (green tier uses darker solid green). */
+            "line-color": "#0ea5e9",
+            "line-width": 4,
+            "line-opacity": 0.92,
+            "line-dasharray": [1.8, 1.2],
           },
         });
         addNeighborhoodOverlayLayers(
@@ -206,15 +208,21 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       };
     }, []);
 
-    useEffect(() => {
+    /**
+     * Same pattern as zone tint updates: layout phase + wait for GeoJSON worker + repaint so
+     * dashed links track A/B grade edits immediately (plain useEffect setData could lag a frame).
+     */
+    useLayoutEffect(() => {
       const map = mapRef.current;
       if (!map?.isStyleLoaded()) return;
       const src = map.getSource(HIGH_GRADE_LINKS_SOURCE_ID);
-      if (src && "setData" in src) {
-        (src as maplibregl.GeoJSONSource).setData(
-          buildHighGradeProximityLinks(addresses),
-        );
-      }
+      if (!src || !("setData" in src)) return;
+      const data = buildHighGradeProximityLinks(addresses);
+      const g = src as maplibregl.GeoJSONSource;
+      const pending = g.setData(data, true);
+      void pending?.then(() => map.triggerRepaint()).catch(() => {
+        map.triggerRepaint();
+      });
     }, [addresses]);
 
     /** Layout effect: push zone GeoJSON + selection paint before paint so tints track grade edits immediately. */

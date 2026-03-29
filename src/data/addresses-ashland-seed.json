@@ -174,5 +174,154 @@
     "engagementCount": 0,
     "criticalErrors": [],
     "assessmentTool": "Firewise Certification."
+  },
+  {
+    "id": "ash-parcel-evac-004-a",
+    "parcelId": "DEMO-ZONE004-051",
+    "normalizedAddress": "DEMO SITE A ASH-004 ASHLAND OR 97520",
+    "lat": 42.170445,
+    "lng": -122.67933,
+    "label": "Evac zone 4 — demo site A",
+    "street": "Demo address (ASH-004)",
+    "participantType": "residential",
+    "grade": "C",
+    "engagementCount": 2,
+    "criticalErrors": [
+      "Wood stack within 10 feet of structure"
+    ],
+    "assessmentTool": "Living With Fire App"
+  },
+  {
+    "id": "ash-parcel-evac-004-b",
+    "parcelId": "DEMO-ZONE004-052",
+    "normalizedAddress": "DEMO SITE B ASH-004 ASHLAND OR 97520",
+    "lat": 42.17365,
+    "lng": -122.676781,
+    "label": "Evac zone 4 — demo site B",
+    "street": "Demo address (ASH-004)",
+    "participantType": "business",
+    "grade": "B",
+    "engagementCount": 1,
+    "criticalErrors": [],
+    "assessmentTool": "Firewise Certification."
+  },
+  {
+    "id": "ash-parcel-evac-004-c",
+    "parcelId": "DEMO-ZONE004-053",
+    "normalizedAddress": "DEMO SITE C ASH-004 ASHLAND OR 97520",
+    "lat": 42.181646,
+    "lng": -122.692757,
+    "label": "Evac zone 4 — demo site C",
+    "street": "Demo address (ASH-004)",
+    "participantType": "hoa",
+    "grade": null,
+    "engagementCount": 0,
+    "criticalErrors": [],
+    "assessmentTool": "Other"
+  },
+  {
+    "id": "ash-parcel-evac-004-d",
+    "parcelId": "DEMO-ZONE004-054",
+    "normalizedAddress": "DEMO SITE D ASH-004 ASHLAND OR 97520",
+    "lat": 42.169046,
+    "lng": -122.676934,
+    "label": "Evac zone 4 — demo site D",
+    "street": "Demo address (ASH-004)",
+    "participantType": "residential",
+    "grade": "A",
+    "engagementCount": 3,
+    "criticalErrors": [],
+    "assessmentTool": "Living With Fire App"
+  },
+  {
+    "id": "ash-parcel-evac-005-a",
+    "parcelId": "DEMO-ZONE005-055",
+    "normalizedAddress": "DEMO SITE A ASH-005 ASHLAND OR 97520",
+    "lat": 42.179154,
+    "lng": -122.657656,
+    "label": "Evac zone 5 — demo site A",
+    "street": "Demo address (ASH-005)",
+    "participantType": "residential",
+    "grade": "D",
+    "engagementCount": 2,
+    "criticalErrors": [
+      "Limited defensible space along the street frontage"
+    ],
+    "assessmentTool": "Firewise Certification."
+  },
+  {
+    "id": "ash-parcel-evac-005-b",
+    "parcelId": "DEMO-ZONE005-056",
+    "normalizedAddress": "DEMO SITE B ASH-005 ASHLAND OR 97520",
+    "lat": 42.182729,
+    "lng": -122.662735,
+    "label": "Evac zone 5 — demo site B",
+    "street": "Demo address (ASH-005)",
+    "participantType": "institution",
+    "grade": "E",
+    "engagementCount": 1,
+    "criticalErrors": [
+      "No fire drill or documented evacuation plan"
+    ],
+    "assessmentTool": "Other"
+  },
+  {
+    "id": "ash-parcel-evac-005-c",
+    "parcelId": "DEMO-ZONE005-057",
+    "normalizedAddress": "DEMO SITE C ASH-005 ASHLAND OR 97520",
+    "lat": 42.177712,
+    "lng": -122.654185,
+    "label": "Evac zone 5 — demo site C",
+    "street": "Demo address (ASH-005)",
+    "participantType": "business",
+    "grade": null,
+    "engagementCount": 4,
+    "criticalErrors": [],
+    "assessmentTool": "Living With Fire App"
+  },
+  {
+    "id": "ash-parcel-evac-006-a",
+    "parcelId": "DEMO-ZONE006-058",
+    "normalizedAddress": "DEMO SITE A ASH-006 ASHLAND OR 97520",
+    "lat": 42.188167,
+    "lng": -122.674255,
+    "label": "Evac zone 6 — demo site A",
+    "street": "Demo address (ASH-006)",
+    "participantType": "hoa",
+    "grade": "B",
+    "engagementCount": 5,
+    "criticalErrors": [],
+    "assessmentTool": "Firewise Certification."
+  },
+  {
+    "id": "ash-parcel-evac-006-b",
+    "parcelId": "DEMO-ZONE006-059",
+    "normalizedAddress": "DEMO SITE B ASH-006 ASHLAND OR 97520",
+    "lat": 42.185619,
+    "lng": -122.667971,
+    "label": "Evac zone 6 — demo site B",
+    "street": "Demo address (ASH-006)",
+    "participantType": "residential",
+    "grade": "F",
+    "engagementCount": 2,
+    "criticalErrors": [
+      "Overgrown vegetation in defensible space",
+      "Wood siding or deck without ignition-resistant treatment"
+    ],
+    "assessmentTool": "Living With Fire App"
+  },
+  {
+    "id": "ash-parcel-evac-006-c",
+    "parcelId": "DEMO-ZONE006-060",
+    "normalizedAddress": "DEMO SITE C ASH-006 ASHLAND OR 97520",
+    "lat": 42.185306,
+    "lng": -122.678575,
+    "label": "Evac zone 6 — demo site C",
+    "street": "Demo address (ASH-006)",
+    "participantType": "residential",
+    "grade": null,
+    "engagementCount": 1,
+    "criticalErrors": [],
+    "assessmentTool": "Other"
   }
 ]

@@ -24,10 +24,16 @@ function isGradeBOrAbove(grade: AddressRecord["grade"]): grade is "A" | "B" {
   return grade !== null && GRADE_B_OR_ABOVE.has(grade);
 }
 
+/**
+ * Max geodesic distance (meters) between two A/B sites for a “potential fire break” segment.
+ * Slightly wider than 1 km so nearby high-preparedness clusters still connect on demo data.
+ */
+export const HIGH_GRADE_LINK_MAX_DISTANCE_METERS = 1500;
+
 /** Unordered pairs within `maxDistanceM` where both addresses have grade A or B. */
 export function buildHighGradeProximityLinks(
   addresses: AddressRecord[],
-  maxDistanceM = 1000,
+  maxDistanceM = HIGH_GRADE_LINK_MAX_DISTANCE_METERS,
 ): FeatureCollection<LineString> {
   const qualified = addresses.filter((a) => isGradeBOrAbove(a.grade));
   const features: Feature<LineString>[] = [];
@@ -50,5 +56,15 @@ export function buildHighGradeProximityLinks(
       }
     }
   }
-  return { type: "FeatureCollection", features };
+  /** Nudges MapLibre workers when feature count is unchanged but grades/edges differ (same idea as zone `tintRevision`). */
+  const linksRevision = [...qualified]
+    .map((a) => `${a.id}:${a.grade ?? ""}`)
+    .sort()
+    .join("|");
+  const collection = {
+    type: "FeatureCollection" as const,
+    features,
+    linksRevision,
+  };
+  return collection as FeatureCollection<LineString>;
 }

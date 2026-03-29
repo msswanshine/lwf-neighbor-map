@@ -521,9 +521,13 @@ export function NavigationControl(props: NavigationControlProps) {
           onOpenChange={setFireBreaksOpen}
         >
           <p className="text-xs text-[var(--color-muted)]">
-            Green lines connect A- or B-rated sites that are within about one
-            kilometer of each other (straight-line distance), among sites
-            currently shown on the map.
+            <strong className="text-[var(--color-text)]">Bright dashed cyan</strong>{" "}
+            segments connect pairs of sites that are both graded{" "}
+            <strong>A or B</strong> and within about{" "}
+            <strong>1.5&nbsp;km</strong> apart as straight-line geodesic
+            distance (not driving distance). Sites graded C–F or ungraded are not linked. Evacuation zone
+            borders (thin solid lines by tier) are separate—only the dashed lines
+            are this tool.
           </p>
           <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text)]">
             <input
