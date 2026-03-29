@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   forwardRef,
   useImperativeHandle,
@@ -8,91 +9,39 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
 import { ASHLAND_BBOX } from "../config/regions";
+import {
+  NEIGHBORHOODS_FILL_LAYER_ID,
+  NEIGHBORHOODS_LINE_LAYER_ID,
+  NEIGHBORHOODS_SOURCE_ID,
+  addNeighborhoodOverlayLayers,
+  neighborhoodSelectionFillOpacity,
+  neighborhoodSelectionLineOpacity,
+  neighborhoodSelectionLineWidth,
+  type NeighborhoodGeoJson,
+} from "./neighborhood-layers";
 import { buildOvertureStyle } from "./overture-style";
 import type { AddressRecord } from "../features/addresses/types";
 import { buildHighGradeProximityLinks } from "../features/addresses/high-grade-proximity-links";
-import { gradeHexToRgba, gradeToMapColor } from "../lib/rating-colors";
-import { PARTICIPANT_ACCENT_HEX } from "../lib/participant-colors";
+import {
+  buildAddressMarkerElement,
+  clampedBoundsFromAddresses,
+} from "./address-marker";
 
 const MAP_CONTAINER_ID = "fire-prep-map";
 
 const HIGH_GRADE_LINKS_SOURCE_ID = "high-grade-links";
 const HIGH_GRADE_LINKS_LAYER_ID = "high-grade-links-line";
 
-/** Solid “ring” from box-shadow spread: 24px beyond the dot edge, grade-colored. */
-const ADDRESS_HALO_SPREAD_PX = 24;
-/** Stronger than the map-wide red wash so halos read clearly on top of it. */
-const ADDRESS_HALO_ALPHA = 0.62;
-
-/** Clamp address extents to Ashland study area; expand point-like sets slightly. */
-function clampedBoundsFromAddresses(
-  addresses: AddressRecord[],
-): [[number, number], [number, number]] | null {
-  if (!addresses.length) return null;
-  const [w, s, e, n] = ASHLAND_BBOX;
-  let minLng = addresses[0].lng;
-  let maxLng = addresses[0].lng;
-  let minLat = addresses[0].lat;
-  let maxLat = addresses[0].lat;
-  for (const a of addresses) {
-    minLng = Math.min(minLng, a.lng);
-    maxLng = Math.max(maxLng, a.lng);
-    minLat = Math.min(minLat, a.lat);
-    maxLat = Math.max(maxLat, a.lat);
-  }
-  const expand = 0.0014;
-  if (minLng === maxLng) {
-    minLng -= expand;
-    maxLng += expand;
-  }
-  if (minLat === maxLat) {
-    minLat -= expand;
-    maxLat += expand;
-  }
-  minLng = Math.max(w, minLng - expand * 0.35);
-  maxLng = Math.min(e, maxLng + expand * 0.35);
-  minLat = Math.max(s, minLat - expand * 0.35);
-  maxLat = Math.min(n, maxLat + expand * 0.35);
-  if (minLng >= maxLng || minLat >= maxLat) return null;
-  return [
-    [minLng, minLat],
-    [maxLng, maxLat],
-  ];
-}
-
-function buildAddressMarkerElement(
-  a: AddressRecord,
-  selected: boolean,
-): HTMLButtonElement {
-  const fill = gradeToMapColor(a.grade);
-  const ring = PARTICIPANT_ACCENT_HEX[a.participantType];
-  const size = selected ? 22 : 14;
-  const ringW = selected ? 2.5 : 2;
-  const haloRgb = gradeHexToRgba(fill, ADDRESS_HALO_ALPHA);
-  const el = document.createElement("button");
-  el.type = "button";
-  el.setAttribute("aria-label", `${a.label}, preparedness ${a.grade ?? "ungraded"}`);
-  el.style.width = `${size}px`;
-  el.style.height = `${size}px`;
-  el.style.borderRadius = "50%";
-  el.style.background = fill;
-  el.style.border = `${ringW}px solid ${ring}`;
-  el.style.padding = "0";
-  el.style.cursor = "pointer";
-  el.style.boxSizing = "border-box";
-  el.style.display = "block";
-  el.style.overflow = "visible";
-  el.style.boxShadow = `0 0 0 ${ADDRESS_HALO_SPREAD_PX}px ${haloRgb}, 0 1px 3px rgba(0,0,0,0.35)`;
-  return el;
-}
-
 export type FirePrepMapProps = {
   addresses: AddressRecord[];
+  /** Boundaries used for labels and point-in-polygon (same asset as App fetch). */
+  neighborhoods: NeighborhoodGeoJson;
+  /** Stable string that changes whenever grades or zone ids change (GeoJSON tint refresh). */
+  neighborhoodTintRevision: string;
+  selectedNeighborhoodId: string | null;
   selectedId: string | null;
   onSelectAddress: (id: string | null) => void;
   onSelectNeighborhood: (id: string | null) => void;
-  /** Semi-transparent RGBA wash over the map (A/B city share). */
-  mapWashRgba: string;
   /** Fired once the map style is ready (for initial fit). */
   onOverlayReady?: () => void;
   /** Green segments between A/B sites within 1 km. */
@@ -107,10 +56,12 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
   function FirePrepMap(
     {
       addresses,
+      neighborhoods,
+      neighborhoodTintRevision,
+      selectedNeighborhoodId,
       selectedId,
       onSelectAddress,
       onSelectNeighborhood,
-      mapWashRgba,
       onOverlayReady,
       showPotentialFireBreakLinks,
     },
@@ -128,6 +79,8 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     addressesRef.current = addresses;
     const showFireBreakLinksRef = useRef(showPotentialFireBreakLinks);
     showFireBreakLinksRef.current = showPotentialFireBreakLinks;
+    const neighborhoodsRef = useRef(neighborhoods);
+    neighborhoodsRef.current = neighborhoods;
 
     useImperativeHandle(
       ref,
@@ -151,7 +104,7 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
         container: MAP_CONTAINER_ID,
         style: buildOvertureStyle(),
         bounds: ASHLAND_BBOX,
-        fitBoundsOptions: { padding: 36, duration: 0 },
+        fitBoundsOptions: { padding: 52, duration: 0 },
         minZoom: 8,
         maxZoom: 19,
         attributionControl: false,
@@ -176,10 +129,6 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       );
 
       const onStyleReady = () => {
-        map.on("click", () => {
-          onSelectAddressRef.current(null);
-          onSelectNeighborhoodRef.current(null);
-        });
         map.addSource(HIGH_GRADE_LINKS_SOURCE_ID, {
           type: "geojson",
           data: buildHighGradeProximityLinks(addressesRef.current),
@@ -194,10 +143,55 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
             visibility: showFireBreakLinksRef.current ? "visible" : "none",
           },
           paint: {
-            "line-color": "#22c55e",
-            "line-width": 5,
-            "line-opacity": 0.9,
+            /** Teal dashed lines — distinct from evacuation-zone outlines (green tier uses darker solid green). */
+            "line-color": "#0ea5e9",
+            "line-width": 4,
+            "line-opacity": 0.92,
+            "line-dasharray": [1.8, 1.2],
           },
+        });
+        addNeighborhoodOverlayLayers(
+          map,
+          neighborhoodsRef.current,
+          HIGH_GRADE_LINKS_LAYER_ID,
+        );
+        map.setPaintProperty(
+          NEIGHBORHOODS_FILL_LAYER_ID,
+          "fill-opacity",
+          neighborhoodSelectionFillOpacity(null),
+        );
+        map.setPaintProperty(
+          NEIGHBORHOODS_LINE_LAYER_ID,
+          "line-width",
+          neighborhoodSelectionLineWidth(null),
+        );
+        map.setPaintProperty(
+          NEIGHBORHOODS_LINE_LAYER_ID,
+          "line-opacity",
+          neighborhoodSelectionLineOpacity(null),
+        );
+        map.on("click", (e) => {
+          const hits = map.queryRenderedFeatures(e.point, {
+            layers: [NEIGHBORHOODS_FILL_LAYER_ID],
+          });
+          if (hits.length) {
+            const raw = hits[0].properties?.id;
+            const nid = typeof raw === "string" ? raw : String(raw ?? "");
+            if (nid) {
+              onSelectNeighborhoodRef.current(nid);
+              onSelectAddressRef.current(null);
+              return;
+            }
+          }
+          onSelectAddressRef.current(null);
+          onSelectNeighborhoodRef.current(null);
+        });
+        const canvas = map.getCanvas();
+        map.on("mouseenter", NEIGHBORHOODS_FILL_LAYER_ID, () => {
+          canvas.style.cursor = "pointer";
+        });
+        map.on("mouseleave", NEIGHBORHOODS_FILL_LAYER_ID, () => {
+          canvas.style.cursor = "";
         });
         queueMicrotask(() => onOverlayReadyRef.current?.());
       };
@@ -214,16 +208,77 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       };
     }, []);
 
-    useEffect(() => {
+    /**
+     * Zone tints + fire-break links both use GeoJSON `setData(..., true)`. Running those updates
+     * in two separate layout effects queues parallel worker jobs and MapLibre can apply/stale
+     * them in the wrong order — zone washes stop tracking grade edits. Run neighborhood `setData`
+     * first, then high-grade links after it completes, then selection paint + repaint.
+     */
+    useLayoutEffect(() => {
       const map = mapRef.current;
       if (!map?.isStyleLoaded()) return;
-      const src = map.getSource(HIGH_GRADE_LINKS_SOURCE_ID);
-      if (src && "setData" in src) {
-        (src as maplibregl.GeoJSONSource).setData(
-          buildHighGradeProximityLinks(addresses),
-        );
+
+      const pushHighGradeLinks = () => {
+        const linkSrc = map.getSource(HIGH_GRADE_LINKS_SOURCE_ID);
+        if (!linkSrc || !("setData" in linkSrc)) return;
+        const lg = linkSrc as maplibregl.GeoJSONSource;
+        const linkData = buildHighGradeProximityLinks(addresses);
+        const linkPending = lg.setData(linkData, true);
+        void linkPending
+          ?.then(() => map.triggerRepaint())
+          .catch(() => map.triggerRepaint());
+      };
+
+      if (!map.getLayer(NEIGHBORHOODS_FILL_LAYER_ID)) {
+        pushHighGradeLinks();
+        return;
       }
-    }, [addresses]);
+
+      const src = map.getSource(NEIGHBORHOODS_SOURCE_ID);
+      const geo = JSON.parse(JSON.stringify(neighborhoods)) as NeighborhoodGeoJson;
+      (geo as { tintRevision?: string }).tintRevision = neighborhoodTintRevision;
+
+      const applySelectionPaint = () => {
+        map.setPaintProperty(
+          NEIGHBORHOODS_FILL_LAYER_ID,
+          "fill-opacity",
+          neighborhoodSelectionFillOpacity(selectedNeighborhoodId),
+        );
+        map.setPaintProperty(
+          NEIGHBORHOODS_LINE_LAYER_ID,
+          "line-width",
+          neighborhoodSelectionLineWidth(selectedNeighborhoodId),
+        );
+        map.setPaintProperty(
+          NEIGHBORHOODS_LINE_LAYER_ID,
+          "line-opacity",
+          neighborhoodSelectionLineOpacity(selectedNeighborhoodId),
+        );
+        map.triggerRepaint();
+      };
+
+      if (src && "setData" in src) {
+        const g = src as maplibregl.GeoJSONSource;
+        const pending = g.setData(geo, true);
+        void pending
+          ?.then(() => {
+            applySelectionPaint();
+            pushHighGradeLinks();
+          })
+          .catch(() => {
+            applySelectionPaint();
+            pushHighGradeLinks();
+          });
+      } else {
+        applySelectionPaint();
+        pushHighGradeLinks();
+      }
+    }, [
+      addresses,
+      neighborhoods,
+      neighborhoodTintRevision,
+      selectedNeighborhoodId,
+    ]);
 
     useEffect(() => {
       const map = mapRef.current;
@@ -264,17 +319,12 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     }, [addresses, selectedId]);
 
     return (
-      <div className="relative h-full w-full min-h-[420px] rounded-lg border border-[var(--color-border)]">
+      <div className="relative h-full min-h-[50vh] w-full rounded-lg border border-[var(--color-border)] md:min-h-0">
         <div
           id={MAP_CONTAINER_ID}
-          className="h-full w-full min-h-[420px] rounded-[inherit]"
+          className="h-full min-h-[50vh] w-full rounded-[inherit] md:min-h-0"
           role="application"
           aria-label="Interactive map of Ashland with preparedness ratings"
-        />
-        <div
-          className="pointer-events-none absolute inset-0 z-10 rounded-[inherit]"
-          style={{ backgroundColor: mapWashRgba }}
-          aria-hidden
         />
       </div>
     );

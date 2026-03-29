@@ -24,6 +24,14 @@ export const MAP_WASH_SWATCH_HEX: Record<MapWashTier, string> = {
   green: "#86efac",
 };
 
+/** Darker outlines for evacuation zone fill layers on the map. */
+export const MAP_WASH_OVERLAY_LINE_HEX: Record<MapWashTier, string> = {
+  red: "#dc2626",
+  orange: "#ea580c",
+  yellow: "#ca8a04",
+  green: "#15803d",
+};
+
 export const MAP_WASH_TIER_LABEL: Record<MapWashTier, string> = {
   green: "Green",
   yellow: "Yellow",

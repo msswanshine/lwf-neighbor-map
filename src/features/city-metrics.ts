@@ -46,7 +46,7 @@ export function computeNeighborhoodCoverage(
 
 export function coverageToCsv(rows: NeighborhoodCoverage[]): string {
   const header =
-    "neighborhood_id,neighborhood_name,sites,engaged,graded,engagement_rate,graded_rate,rollup_grade";
+    "evac_zone_id,evac_zone_name,sites,engaged,graded,engagement_rate,graded_rate,rollup_grade";
   const lines = rows.map((r) =>
     [
       escapeCsv(r.neighborhoodId),
@@ -91,7 +91,7 @@ export function addressesToSnapshotCsv(
   }[],
 ): string {
   const header =
-    "id,parcel_id,normalized_address,street,neighborhood,participant_type,grade,engagement_count,assessment_tool";
+    "id,parcel_id,normalized_address,street,evac_zone,participant_type,grade,engagement_count,assessment_tool";
   const lines = rows.map((r) =>
     [
       escapeCsv(r.id),

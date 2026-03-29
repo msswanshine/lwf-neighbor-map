@@ -1,7 +1,7 @@
 import type { AddressRecord, LetterGrade } from "../addresses/types";
 import { gradeToScore, scoreToGrade } from "../../lib/rating-colors";
 
-/** Minimum rated addresses before showing a neighborhood letter grade. */
+/** Minimum rated addresses before showing a zone rollup letter grade. */
 export const MIN_RATED_ADDRESSES_FOR_ROLLUP = 3;
 
 export type NeighborhoodRollup = {
