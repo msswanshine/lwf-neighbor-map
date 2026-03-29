@@ -184,6 +184,12 @@ export default function App() {
     if (selectedAddressId) setSelectionHiddenByFilter(false);
   }, [selectedAddressId]);
 
+  useEffect(() => {
+    if (selectedAddressId || selectedNeighborhoodId) {
+      setRatingsDrawerOpen(true);
+    }
+  }, [selectedAddressId, selectedNeighborhoodId]);
+
   const persist = useCallback((next: typeof addressesPersisted) => {
     setAddressesPersisted(next);
   }, []);

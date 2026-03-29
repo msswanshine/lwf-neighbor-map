@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type {
   AddressRecord,
   FireAssessmentTool,
@@ -96,10 +96,52 @@ export function NavigationControl(props: NavigationControlProps) {
     onShowPotentialFireBreakLinksChange,
   } = props;
 
+  const [findOnMapOpen, setFindOnMapOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(true);
+  const [citySummaryOpen, setCitySummaryOpen] = useState(false);
+  const [propertyDetailsOpen, setPropertyDetailsOpen] = useState(false);
+  const [fireBreaksOpen, setFireBreaksOpen] = useState(false);
+  const [mapBoundsOpen, setMapBoundsOpen] = useState(false);
+  const propertySectionAnchorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedAddress) {
+      setFindOnMapOpen(false);
+      setLegendOpen(false);
+      setCitySummaryOpen(false);
+      setFireBreaksOpen(false);
+      setMapBoundsOpen(false);
+    }
+    if (selectedAddress || selectedNeighborhoodId) {
+      setPropertyDetailsOpen(true);
+    }
+  }, [selectedAddress?.id, selectedNeighborhoodId]);
+
+  useEffect(() => {
+    if (!propertyDetailsOpen) return;
+    if (!selectedAddress && !selectedNeighborhoodId) return;
+    const frame = window.requestAnimationFrame(() => {
+      propertySectionAnchorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    selectedAddress?.id,
+    selectedNeighborhoodId,
+    propertyDetailsOpen,
+  ]);
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-y-contain pr-0.5 [scrollbar-gutter:stable]">
-        <AsideCollapsibleSection sectionId="aside-find-on-map" title="Find on map">
+        <AsideCollapsibleSection
+          sectionId="aside-find-on-map"
+          title="Find on map"
+          open={findOnMapOpen}
+          onOpenChange={setFindOnMapOpen}
+        >
           <label className="block text-xs text-[var(--color-muted)]">
             Search address or parcel id
             <input
@@ -158,12 +200,13 @@ export function NavigationControl(props: NavigationControlProps) {
           ) : null}
         </AsideCollapsibleSection>
 
-        <Legend />
+        <Legend open={legendOpen} onOpenChange={setLegendOpen} />
 
         <AsideCollapsibleSection
           sectionId="aside-city-summary"
           title="City summary"
-          defaultOpen={false}
+          open={citySummaryOpen}
+          onOpenChange={setCitySummaryOpen}
         >
           <div className="flex flex-wrap gap-1">
             <button
@@ -291,11 +334,13 @@ export function NavigationControl(props: NavigationControlProps) {
           </div>
         </AsideCollapsibleSection>
 
-        <AsideCollapsibleSection
-          sectionId="aside-property-details"
-          title="Specific Property Details"
-          defaultOpen={false}
-        >
+        <div ref={propertySectionAnchorRef} className="scroll-mt-3">
+          <AsideCollapsibleSection
+            sectionId="aside-property-details"
+            title="Specific Property Details"
+            open={propertyDetailsOpen}
+            onOpenChange={setPropertyDetailsOpen}
+          >
           {!selectedAddress && !selectedNeighborhoodId && (
             <p className="mt-2 text-sm text-[var(--color-muted)]">
               Click a property marker for grades and participant type, or a
@@ -466,12 +511,14 @@ export function NavigationControl(props: NavigationControlProps) {
               </ul>
             </div>
           )}
-        </AsideCollapsibleSection>
+          </AsideCollapsibleSection>
+        </div>
 
         <AsideCollapsibleSection
           sectionId="aside-fire-breaks"
           title="Explore potential fire breaks."
-          defaultOpen={false}
+          open={fireBreaksOpen}
+          onOpenChange={setFireBreaksOpen}
         >
           <p className="text-xs text-[var(--color-muted)]">
             Green lines connect A- or B-rated sites that are within about one
@@ -494,7 +541,8 @@ export function NavigationControl(props: NavigationControlProps) {
         <AsideCollapsibleSection
           sectionId="aside-map-bounds"
           title="Map view bounds"
-          defaultOpen={false}
+          open={mapBoundsOpen}
+          onOpenChange={setMapBoundsOpen}
         >
           <p className="text-xs text-[var(--color-muted)]">
             View: [{ashlandBbox.join(", ")}] — west, south, east, north.
@@ -559,10 +607,25 @@ function AsideCollapsibleSection(props: {
   sectionId: string;
   title: string;
   defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: ReactNode;
 }) {
-  const { sectionId, title, defaultOpen = true, children } = props;
-  const [open, setOpen] = useState(defaultOpen);
+  const {
+    sectionId,
+    title,
+    defaultOpen = true,
+    open: openControlled,
+    onOpenChange,
+    children,
+  } = props;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const controlled = openControlled !== undefined;
+  const open = controlled ? openControlled : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!controlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const headingId = useId();
   const panelId = `${sectionId}-panel`;
 
@@ -581,7 +644,7 @@ function AsideCollapsibleSection(props: {
           aria-expanded={open}
           aria-controls={panelId}
           aria-labelledby={headingId}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen(!open)}
         >
           <span className="sr-only">
             {open ? "Collapse" : "Expand"} {title}
@@ -609,9 +672,18 @@ function AsideCollapsibleSection(props: {
   );
 }
 
-function Legend() {
+function Legend(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { open, onOpenChange } = props;
   return (
-    <AsideCollapsibleSection sectionId="aside-legend" title="Legend">
+    <AsideCollapsibleSection
+      sectionId="aside-legend"
+      title="Legend"
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <p className="text-xs text-[var(--color-muted)]">
         <strong>Marker fill</strong> = preparedness grade; <strong>ring</strong>{" "}
         = participant type. Zone polygons show A/B preparedness tier wash (same
