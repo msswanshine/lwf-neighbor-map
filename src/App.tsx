@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { ASHLAND_BBOX } from "./config/regions";
 import { assignNeighborhoodIds } from "./features/neighborhoods/assign-neighborhood";
+import { tierForNeighborhood } from "./features/neighborhoods/neighborhood-wash-tier";
 import { computeNeighborhoodRollups } from "./features/neighborhoods/rollup";
 import type {
   AddressRecord,
@@ -17,12 +18,13 @@ import {
   coverageToCsv,
   downloadCsv,
 } from "./features/city-metrics";
-import { MAP_WASH_RGBA, abShareToWashTier } from "./lib/map-ab-share-wash";
+import { abShareToWashTier } from "./lib/map-ab-share-wash";
 import { NavigationControl } from "./components/NavigationControl";
 import {
   FirePrepMap,
   type FirePrepMapHandle,
 } from "./map/FirePrepMap";
+import type { NeighborhoodGeoJson } from "./map/neighborhood-layers";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 
 type NbProps = { id: string; name: string };
@@ -70,10 +72,11 @@ export default function App() {
   const [selectionHiddenByFilter, setSelectionHiddenByFilter] = useState(false);
   const [showPotentialFireBreakLinks, setShowPotentialFireBreakLinks] =
     useState(false);
+  const [showCityWashOverlay, setShowCityWashOverlay] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/data/neighborhoods-ashland.geojson")
+    fetch("/data/evac-zones-ashland.geojson")
       .then((r) => r.json())
       .then((j) => {
         if (!cancelled) setNeighborhoodsBase(j);
@@ -107,6 +110,33 @@ export default function App() {
     }));
     return assignNeighborhoodIds(base, neighborhoodsBase);
   }, [addressesPersisted, neighborhoodsBase]);
+
+  const neighborhoodsWithWash = useMemo((): NeighborhoodGeoJson | null => {
+    if (!neighborhoodsBase) return null;
+    return {
+      ...neighborhoodsBase,
+      features: neighborhoodsBase.features.map((f) => {
+        const washTier = tierForNeighborhood(f.properties.id, addressesWithNb);
+        return {
+          ...f,
+          properties: {
+            ...f.properties,
+            washTier,
+          },
+        };
+      }),
+    };
+  }, [neighborhoodsBase, addressesWithNb]);
+
+  /** Bumps when grades or neighborhood assignment change so the map GeoJSON source always refreshes tints. */
+  const neighborhoodTintRevision = useMemo(
+    () =>
+      [...addressesWithNb]
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map((a) => `${a.id}:${a.grade ?? ""}:${a.neighborhoodId ?? ""}`)
+        .join("|"),
+    [addressesWithNb],
+  );
 
   const rollups = useMemo(
     () => computeNeighborhoodRollups(addressesWithNb, neighborhoodIds),
@@ -207,7 +237,7 @@ export default function App() {
 
   const exportCoverage = useCallback(() => {
     downloadCsv(
-      "ashland-neighborhood-coverage.csv",
+      "ashland-evac-zone-coverage.csv",
       coverageToCsv(coverageRows),
     );
   }, [coverageRows]);
@@ -251,8 +281,6 @@ export default function App() {
     return { total, abCount, pct, tier };
   }, [addressesWithNb]);
 
-  const mapWashRgba = MAP_WASH_RGBA[cityAbShare.tier];
-
   return (
     <div className="flex min-h-full flex-col gap-3 p-3 md:h-[calc(100dvh-2rem)] md:min-h-0 md:flex-row md:gap-4 md:overflow-hidden md:p-4">
       <div className="flex min-h-[50vh] flex-1 flex-col overflow-y-auto md:min-h-0">
@@ -267,16 +295,18 @@ export default function App() {
           </p>
         </header>
         <div className="min-h-[420px] flex-1">
-          {neighborhoodsBase ? (
+          {neighborhoodsWithWash ? (
             <FirePrepMap
               ref={mapRef}
               addresses={addressesForMap}
-              neighborhoods={neighborhoodsBase}
+              neighborhoods={neighborhoodsWithWash}
+              neighborhoodTintRevision={neighborhoodTintRevision}
               selectedNeighborhoodId={selectedNeighborhoodId}
               selectedId={selectedAddressId}
               onSelectAddress={setSelectedAddressId}
               onSelectNeighborhood={setSelectedNeighborhoodId}
-              mapWashRgba={mapWashRgba}
+              cityWashTier={cityAbShare.tier}
+              showCityWashOverlay={showCityWashOverlay}
               onOverlayReady={onMapOverlayReady}
               showPotentialFireBreakLinks={showPotentialFireBreakLinks}
             />
@@ -285,7 +315,7 @@ export default function App() {
               className="flex h-full min-h-[420px] items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] text-[var(--color-muted)]"
               role="status"
             >
-              Loading neighborhood boundaries…
+              Loading evacuation zone boundaries…
             </div>
           )}
         </div>
@@ -298,7 +328,7 @@ export default function App() {
             </li>
             <li>Identify areas of least preparedness to maximize outreach</li>
             <li>
-              Enable neighborhoods to help build urban firebreak zones by working
+              Enable evacuation zones to help build urban firebreak areas by working
               together clumping A rated properties
             </li>
             <li>
@@ -311,9 +341,9 @@ export default function App() {
             <li>Map showing all addresses who have opted in to the fireWise program</li>
             <li>Grades of fireWise preparedness</li>
             <li>Participant type</li>
-            <li>Neighborhood rollups</li>
+            <li>Evacuation zone rollups</li>
             <li>
-              Enable neighborhoods to help build urban firebreak zones by lining up
+              Enable evacuation zones to help build urban firebreak areas by lining up
               A rated properties
             </li>
           </ul>
@@ -354,6 +384,8 @@ export default function App() {
         addressesWithNb={addressesWithNb}
         showPotentialFireBreakLinks={showPotentialFireBreakLinks}
         onShowPotentialFireBreakLinksChange={setShowPotentialFireBreakLinks}
+        showCityWashOverlay={showCityWashOverlay}
+        onShowCityWashOverlayChange={setShowCityWashOverlay}
       />
     </div>
   );

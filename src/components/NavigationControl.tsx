@@ -60,6 +60,8 @@ export type NavigationControlProps = {
   addressesWithNb: AddressRecord[];
   showPotentialFireBreakLinks: boolean;
   onShowPotentialFireBreakLinksChange: (show: boolean) => void;
+  showCityWashOverlay: boolean;
+  onShowCityWashOverlayChange: (show: boolean) => void;
 };
 
 export function NavigationControl(props: NavigationControlProps) {
@@ -93,6 +95,8 @@ export function NavigationControl(props: NavigationControlProps) {
     addressesWithNb,
     showPotentialFireBreakLinks,
     onShowPotentialFireBreakLinksChange,
+    showCityWashOverlay,
+    onShowCityWashOverlayChange,
   } = props;
 
   return (
@@ -205,7 +209,17 @@ export function NavigationControl(props: NavigationControlProps) {
             <p className="mt-1 text-[10px] text-[var(--color-muted)]">
               Full-map wash color uses the share of <strong>all</strong> listed
               sites that are graded A or B (ungraded counts as not A/B).
+              Evacuation zone overlays use the same A/B tier colors per zone.
             </p>
+            <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-[var(--color-text)]">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                checked={showCityWashOverlay}
+                onChange={(e) => onShowCityWashOverlayChange(e.target.checked)}
+              />
+              <span>Show city-wide map tint</span>
+            </label>
             <p className="mt-2 text-xs text-[var(--color-text)]" aria-live="polite">
               {cityAbShare.total === 0 ? (
                 "No sites loaded."
@@ -252,7 +266,7 @@ export function NavigationControl(props: NavigationControlProps) {
             <table className="w-full text-left text-[10px] text-[var(--color-muted)]">
               <thead>
                 <tr className="text-[var(--color-text)]">
-                  <th className="py-1 pr-1 font-medium">Area</th>
+                  <th className="py-1 pr-1 font-medium">Zone</th>
                   <th className="py-1 pr-1 font-medium">Sites</th>
                   <th className="py-1 pr-1 font-medium">Eng.</th>
                   <th className="py-1 font-medium">Grd.</th>
@@ -281,6 +295,18 @@ export function NavigationControl(props: NavigationControlProps) {
                 ))}
               </tbody>
             </table>
+            <p className="mt-2 text-[10px] leading-snug text-[var(--color-muted)]">
+              Evacuation zone boundaries:{" "}
+              <a
+                href="https://ashlandgis.maps.arcgis.com/apps/instant/lookup/index.html?appid=192bced74b664595abd59ab1ea5a7c39"
+                className="text-sky-400 underline-offset-2 hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                City of Ashland GIS
+              </a>
+              . For emergency instructions, follow official alerts—not this demo map.
+            </p>
           </div>
         </div>
 
@@ -290,7 +316,8 @@ export function NavigationControl(props: NavigationControlProps) {
           </h2>
           {!selectedAddress && !selectedNeighborhoodId && (
             <p className="mt-2 text-sm text-[var(--color-muted)]">
-              Click a property marker for grades and participant type.{" "}
+              Click a property marker for grades and participant type, or a
+              zone polygon for its rollup.{" "}
               <span className="sr-only">Map bounds: Ashland, Oregon.</span>
             </p>
           )}
@@ -426,8 +453,8 @@ export function NavigationControl(props: NavigationControlProps) {
                 {selectedRollup.ratedCount < MIN_RATED_ADDRESSES_FOR_ROLLUP && (
                   <span className="block text-xs">
                     Need at least {MIN_RATED_ADDRESSES_FOR_ROLLUP} graded
-                    addresses in this area (currently {selectedRollup.ratedCount}
-                    ).
+                    addresses in this evacuation zone (currently{" "}
+                    {selectedRollup.ratedCount}).
                   </span>
                 )}
               </p>
@@ -523,8 +550,9 @@ function Legend() {
     <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
       <h2 className="text-sm font-semibold text-[var(--color-text)]">Legend</h2>
       <p className="mt-1 text-xs text-[var(--color-muted)]">
-        <strong>Fill</strong> color = preparedness grade; <strong>ring</strong>{" "}
-        color = participant type (see below). Map shows property markers only.
+        <strong>Marker fill</strong> = preparedness grade; <strong>ring</strong>{" "}
+        = participant type. Zone polygons show A/B preparedness tier wash (same
+        scale as the city summary).
       </p>
       <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {GRADE_ORDER.map((g) => (
