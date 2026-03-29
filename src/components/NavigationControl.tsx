@@ -58,6 +58,8 @@ export type NavigationControlProps = {
   onSetGrade: (id: string, grade: LetterGrade | null) => void;
   onBumpEngagement: (id: string) => void;
   addressesWithNb: AddressRecord[];
+  showPotentialFireBreakLinks: boolean;
+  onShowPotentialFireBreakLinksChange: (show: boolean) => void;
 };
 
 export function NavigationControl(props: NavigationControlProps) {
@@ -89,6 +91,8 @@ export function NavigationControl(props: NavigationControlProps) {
     onSetGrade,
     onBumpEngagement,
     addressesWithNb,
+    showPotentialFireBreakLinks,
+    onShowPotentialFireBreakLinksChange,
   } = props;
 
   return (
@@ -353,6 +357,22 @@ export function NavigationControl(props: NavigationControlProps) {
                 Engagement (mock / affiliate proxy):{" "}
                 {selectedAddress.engagementCount}
               </p>
+              <div>
+                <p className="text-xs font-medium text-[var(--color-text)]">
+                  Critical errors
+                </p>
+                {selectedAddress.criticalErrors.length > 0 ? (
+                  <ul className="mt-1 list-inside list-disc text-xs text-[var(--color-muted)]">
+                    {selectedAddress.criticalErrors.map((item, i) => (
+                      <li key={`${i}-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-xs text-[var(--color-muted)]">
+                    None noted.
+                  </p>
+                )}
+              </div>
               <div
                 className="flex flex-wrap gap-1"
                 role="group"
@@ -437,6 +457,28 @@ export function NavigationControl(props: NavigationControlProps) {
               </ul>
             </div>
           )}
+        </div>
+
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
+          <h2 className="text-sm font-semibold text-[var(--color-text)]">
+            Explore potential fire breaks.
+          </h2>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
+            Green lines connect A- or B-rated sites that are within about one
+            kilometer of each other (straight-line distance), among sites
+            currently shown on the map.
+          </p>
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text)]">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              checked={showPotentialFireBreakLinks}
+              onChange={(e) =>
+                onShowPotentialFireBreakLinksChange(e.target.checked)
+              }
+            />
+            <span>Show connection lines on map</span>
+          </label>
         </div>
 
         <p className="text-xs text-[var(--color-muted)]">

@@ -68,6 +68,8 @@ export default function App() {
   const debouncedSearch = useDebouncedValue(addressSearch, 220);
   const mapRef = useRef<FirePrepMapHandle>(null);
   const [selectionHiddenByFilter, setSelectionHiddenByFilter] = useState(false);
+  const [showPotentialFireBreakLinks, setShowPotentialFireBreakLinks] =
+    useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -274,6 +276,7 @@ export default function App() {
               onSelectNeighborhood={setSelectedNeighborhoodId}
               mapWashRgba={mapWashRgba}
               onOverlayReady={onMapOverlayReady}
+              showPotentialFireBreakLinks={showPotentialFireBreakLinks}
             />
           ) : (
             <div
@@ -347,6 +350,8 @@ export default function App() {
         onSetGrade={setGrade}
         onBumpEngagement={bumpEngagement}
         addressesWithNb={addressesWithNb}
+        showPotentialFireBreakLinks={showPotentialFireBreakLinks}
+        onShowPotentialFireBreakLinksChange={setShowPotentialFireBreakLinks}
       />
     </div>
   );

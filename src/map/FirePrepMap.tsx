@@ -10,10 +10,14 @@ import { Protocol } from "pmtiles";
 import { ASHLAND_BBOX } from "../config/regions";
 import { buildOvertureStyle } from "./overture-style";
 import type { AddressRecord } from "../features/addresses/types";
+import { buildHighGradeProximityLinks } from "../features/addresses/high-grade-proximity-links";
 import { gradeHexToRgba, gradeToMapColor } from "../lib/rating-colors";
 import { PARTICIPANT_ACCENT_HEX } from "../lib/participant-colors";
 
 const MAP_CONTAINER_ID = "fire-prep-map";
+
+const HIGH_GRADE_LINKS_SOURCE_ID = "high-grade-links";
+const HIGH_GRADE_LINKS_LAYER_ID = "high-grade-links-line";
 
 /** Solid “ring” from box-shadow spread: 24px beyond the dot edge, grade-colored. */
 const ADDRESS_HALO_SPREAD_PX = 24;
@@ -91,6 +95,8 @@ export type FirePrepMapProps = {
   mapWashRgba: string;
   /** Fired once the map style is ready (for initial fit). */
   onOverlayReady?: () => void;
+  /** Green segments between A/B sites within 1 km. */
+  showPotentialFireBreakLinks: boolean;
 };
 
 export type FirePrepMapHandle = {
@@ -106,6 +112,7 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       onSelectNeighborhood,
       mapWashRgba,
       onOverlayReady,
+      showPotentialFireBreakLinks,
     },
     ref,
   ) {
@@ -117,6 +124,10 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
     onSelectNeighborhoodRef.current = onSelectNeighborhood;
     const onOverlayReadyRef = useRef(onOverlayReady);
     onOverlayReadyRef.current = onOverlayReady;
+    const addressesRef = useRef(addresses);
+    addressesRef.current = addresses;
+    const showFireBreakLinksRef = useRef(showPotentialFireBreakLinks);
+    showFireBreakLinksRef.current = showPotentialFireBreakLinks;
 
     useImperativeHandle(
       ref,
@@ -169,6 +180,25 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
           onSelectAddressRef.current(null);
           onSelectNeighborhoodRef.current(null);
         });
+        map.addSource(HIGH_GRADE_LINKS_SOURCE_ID, {
+          type: "geojson",
+          data: buildHighGradeProximityLinks(addressesRef.current),
+        });
+        map.addLayer({
+          id: HIGH_GRADE_LINKS_LAYER_ID,
+          type: "line",
+          source: HIGH_GRADE_LINKS_SOURCE_ID,
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+            visibility: showFireBreakLinksRef.current ? "visible" : "none",
+          },
+          paint: {
+            "line-color": "#22c55e",
+            "line-width": 5,
+            "line-opacity": 0.9,
+          },
+        });
         queueMicrotask(() => onOverlayReadyRef.current?.());
       };
 
@@ -183,6 +213,28 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
         mapRef.current = null;
       };
     }, []);
+
+    useEffect(() => {
+      const map = mapRef.current;
+      if (!map?.isStyleLoaded()) return;
+      const src = map.getSource(HIGH_GRADE_LINKS_SOURCE_ID);
+      if (src && "setData" in src) {
+        (src as maplibregl.GeoJSONSource).setData(
+          buildHighGradeProximityLinks(addresses),
+        );
+      }
+    }, [addresses]);
+
+    useEffect(() => {
+      const map = mapRef.current;
+      if (!map?.isStyleLoaded() || !map.getLayer(HIGH_GRADE_LINKS_LAYER_ID))
+        return;
+      map.setLayoutProperty(
+        HIGH_GRADE_LINKS_LAYER_ID,
+        "visibility",
+        showPotentialFireBreakLinks ? "visible" : "none",
+      );
+    }, [showPotentialFireBreakLinks]);
 
     /** DOM markers sit above the WebGL canvas for reliable visibility. */
     useEffect(() => {

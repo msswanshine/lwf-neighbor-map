@@ -47,6 +47,8 @@ export type AddressRecord = {
   grade: LetterGrade | null;
   engagementCount: number;
   assessmentTool: FireAssessmentTool;
+  /** Notable risk / preparedness gaps (demo seed; length typically tracks grade A→F). */
+  criticalErrors: string[];
   neighborhoodId: string | null;
 };
 

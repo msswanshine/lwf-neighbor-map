@@ -10,6 +10,9 @@
     "participantType": "business",
     "grade": "B",
     "engagementCount": 3,
+    "criticalErrors": [
+      "Combustible storage or displays in the front setback"
+    ],
     "assessmentTool": "Living With Fire App"
   },
   {
@@ -23,6 +26,7 @@
     "participantType": "residential",
     "grade": null,
     "engagementCount": 0,
+    "criticalErrors": [],
     "assessmentTool": "Other"
   },
   {
@@ -36,6 +40,10 @@
     "participantType": "business",
     "grade": "C",
     "engagementCount": 6,
+    "criticalErrors": [
+      "Limited defensible space along the street frontage",
+      "Signage or awnings with combustible materials"
+    ],
     "assessmentTool": "Firewise Certification."
   },
   {
@@ -49,6 +57,7 @@
     "participantType": "residential",
     "grade": "A",
     "engagementCount": 2,
+    "criticalErrors": [],
     "assessmentTool": "Living With Fire App"
   },
   {
@@ -62,6 +71,7 @@
     "participantType": "business",
     "grade": "A",
     "engagementCount": 2,
+    "criticalErrors": [],
     "assessmentTool": "Firewise Certification."
   },
   {
@@ -75,6 +85,11 @@
     "participantType": "hoa",
     "grade": "D",
     "engagementCount": 4,
+    "criticalErrors": [
+      "Overgrown vegetation in defensible space",
+      "Too many trees in the yard creating ladder fuels",
+      "Bark mulch near the home"
+    ],
     "assessmentTool": "Other"
   },
   {
@@ -88,6 +103,9 @@
     "participantType": "hoa",
     "grade": "B",
     "engagementCount": 5,
+    "criticalErrors": [
+      "Shared fence line with continuous woody fuels"
+    ],
     "assessmentTool": "Living With Fire App"
   },
   {
@@ -101,6 +119,13 @@
     "participantType": "institution",
     "grade": "F",
     "engagementCount": 1,
+    "criticalErrors": [
+      "Overgrown vegetation in defensible space",
+      "Too many trees in the yard creating ladder fuels",
+      "Bark mulch near the home",
+      "No fire-resistant materials on exterior walls",
+      "No fire drill or documented evacuation plan"
+    ],
     "assessmentTool": "Firewise Certification."
   },
   {
@@ -114,6 +139,7 @@
     "participantType": "business",
     "grade": null,
     "engagementCount": 1,
+    "criticalErrors": [],
     "assessmentTool": "Other"
   },
   {
@@ -127,6 +153,12 @@
     "participantType": "residential",
     "grade": "E",
     "engagementCount": 2,
+    "criticalErrors": [
+      "Overgrown vegetation in defensible space",
+      "Too many trees in the yard creating ladder fuels",
+      "Bark mulch near the home",
+      "Wood siding or deck without ignition-resistant treatment"
+    ],
     "assessmentTool": "Living With Fire App"
   },
   {
@@ -140,6 +172,7 @@
     "participantType": "residential",
     "grade": null,
     "engagementCount": 0,
+    "criticalErrors": [],
     "assessmentTool": "Firewise Certification."
   }
 ]

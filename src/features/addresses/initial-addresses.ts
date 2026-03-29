@@ -18,6 +18,8 @@ type SeedRow = {
   grade: AddressPersisted["grade"];
   engagementCount: number;
   assessmentTool?: FireAssessmentTool;
+  criticalErrors?: string[];
+  "critical errors"?: string[];
 };
 
 function isFireAssessmentTool(x: unknown): x is FireAssessmentTool {
@@ -45,5 +47,12 @@ export function getBundledSeedAddresses(): AddressPersisted[] {
     assessmentTool: isFireAssessmentTool(r.assessmentTool)
       ? r.assessmentTool
       : FIRE_ASSESSMENT_TOOL_ORDER[0],
+    criticalErrors: (() => {
+      const v =
+        r.criticalErrors !== undefined
+          ? r.criticalErrors
+          : r["critical errors"];
+      return Array.isArray(v) ? v : [];
+    })(),
   }));
 }
