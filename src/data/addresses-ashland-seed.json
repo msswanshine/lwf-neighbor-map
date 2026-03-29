@@ -9,7 +9,11 @@
     "street": "20 S 1st St",
     "participantType": "business",
     "grade": "B",
-    "engagementCount": 3
+    "engagementCount": 3,
+    "criticalErrors": [
+      "Combustible storage or displays in the front setback"
+    ],
+    "assessmentTool": "Living With Fire App"
   },
   {
     "id": "ash-parcel-north-02",
@@ -21,7 +25,9 @@
     "street": "880 N Mountain Ave",
     "participantType": "residential",
     "grade": null,
-    "engagementCount": 0
+    "engagementCount": 0,
+    "criticalErrors": [],
+    "assessmentTool": "Other"
   },
   {
     "id": "ash-parcel-siskiyou-03",
@@ -33,7 +39,12 @@
     "street": "1555 Siskiyou Blvd",
     "participantType": "business",
     "grade": "C",
-    "engagementCount": 6
+    "engagementCount": 6,
+    "criticalErrors": [
+      "Limited defensible space along the street frontage",
+      "Signage or awnings with combustible materials"
+    ],
+    "assessmentTool": "Firewise Certification."
   },
   {
     "id": "ash-parcel-highland-04",
@@ -45,7 +56,23 @@
     "street": "1400 Highland Ave",
     "participantType": "residential",
     "grade": "A",
-    "engagementCount": 2
+    "engagementCount": 2,
+    "criticalErrors": [],
+    "assessmentTool": "Living With Fire App"
+  },
+  {
+    "id": "white-rabbit-04",
+    "parcelId": "DEMO-R130121300-005",
+    "normalizedAddress": "5 N MAIN ST SUITE 2 ASHLAND OR 97520",
+    "lat": 42.1983159,
+    "lng": -122.7160530,
+    "label": "5 N Main St, Suite 2",
+    "street": "5 N Main St, Suite 2",
+    "participantType": "business",
+    "grade": "A",
+    "engagementCount": 2,
+    "criticalErrors": [],
+    "assessmentTool": "Firewise Certification."
   },
   {
     "id": "ash-parcel-helman-05",
@@ -57,7 +84,13 @@
     "street": "945 Helman St",
     "participantType": "hoa",
     "grade": "D",
-    "engagementCount": 4
+    "engagementCount": 4,
+    "criticalErrors": [
+      "Overgrown vegetation in defensible space",
+      "Too many trees in the yard creating ladder fuels",
+      "Bark mulch near the home"
+    ],
+    "assessmentTool": "Other"
   },
   {
     "id": "ash-parcel-rail-06",
@@ -67,9 +100,13 @@
     "lng": -122.7112,
     "label": "Rail district mixed-use",
     "street": "345 A St",
-    "participantType": "property_manager",
+    "participantType": "hoa",
     "grade": "B",
-    "engagementCount": 5
+    "engagementCount": 5,
+    "criticalErrors": [
+      "Shared fence line with continuous woody fuels"
+    ],
+    "assessmentTool": "Living With Fire App"
   },
   {
     "id": "ash-parcel-sou-07",
@@ -81,7 +118,15 @@
     "street": "1250 Siskiyou Blvd",
     "participantType": "institution",
     "grade": "F",
-    "engagementCount": 1
+    "engagementCount": 1,
+    "criticalErrors": [
+      "Overgrown vegetation in defensible space",
+      "Too many trees in the yard creating ladder fuels",
+      "Bark mulch near the home",
+      "No fire-resistant materials on exterior walls",
+      "No fire drill or documented evacuation plan"
+    ],
+    "assessmentTool": "Firewise Certification."
   },
   {
     "id": "ash-parcel-east-main-08",
@@ -93,7 +138,9 @@
     "street": "1624 E Main St",
     "participantType": "business",
     "grade": null,
-    "engagementCount": 1
+    "engagementCount": 1,
+    "criticalErrors": [],
+    "assessmentTool": "Other"
   },
   {
     "id": "ash-parcel-clear-creek-09",
@@ -105,7 +152,14 @@
     "street": "595 Clear Creek Dr",
     "participantType": "residential",
     "grade": "E",
-    "engagementCount": 2
+    "engagementCount": 2,
+    "criticalErrors": [
+      "Overgrown vegetation in defensible space",
+      "Too many trees in the yard creating ladder fuels",
+      "Bark mulch near the home",
+      "Wood siding or deck without ignition-resistant treatment"
+    ],
+    "assessmentTool": "Living With Fire App"
   },
   {
     "id": "ash-parcel-lithia-10",
@@ -117,6 +171,8 @@
     "street": "507 Clay St",
     "participantType": "residential",
     "grade": null,
-    "engagementCount": 0
+    "engagementCount": 0,
+    "criticalErrors": [],
+    "assessmentTool": "Firewise Certification."
   }
 ]

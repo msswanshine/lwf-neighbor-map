@@ -5,15 +5,13 @@ export type ParticipantType =
   | "residential"
   | "business"
   | "institution"
-  | "hoa"
-  | "property_manager";
+  | "hoa";
 
 export const PARTICIPANT_LABELS: Record<ParticipantType, string> = {
   residential: "Home / residential",
   business: "Business",
   institution: "Institution",
   hoa: "HOA",
-  property_manager: "Property manager",
 };
 
 export const PARTICIPANT_ORDER: ParticipantType[] = [
@@ -21,7 +19,18 @@ export const PARTICIPANT_ORDER: ParticipantType[] = [
   "business",
   "institution",
   "hoa",
-  "property_manager",
+];
+
+/** Tool used to assess / improve fire risk for the property. */
+export type FireAssessmentTool =
+  | "Firewise Certification."
+  | "Living With Fire App"
+  | "Other";
+
+export const FIRE_ASSESSMENT_TOOL_ORDER: FireAssessmentTool[] = [
+  "Firewise Certification.",
+  "Living With Fire App",
+  "Other",
 ];
 
 export type AddressRecord = {
@@ -37,6 +46,9 @@ export type AddressRecord = {
   participantType: ParticipantType;
   grade: LetterGrade | null;
   engagementCount: number;
+  assessmentTool: FireAssessmentTool;
+  /** Notable risk / preparedness gaps (demo seed; length typically tracks grade A→F). */
+  criticalErrors: string[];
   neighborhoodId: string | null;
 };
 

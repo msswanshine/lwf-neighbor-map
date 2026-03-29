@@ -1,37 +1,28 @@
 import {
   useEffect,
   useRef,
-  useCallback,
   forwardRef,
   useImperativeHandle,
 } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
-import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { ASHLAND_BBOX } from "../config/regions";
 import { buildOvertureStyle } from "./overture-style";
-import { addressesToFeatureCollection } from "./addresses-geojson";
 import type { AddressRecord } from "../features/addresses/types";
+import { buildHighGradeProximityLinks } from "../features/addresses/high-grade-proximity-links";
+import { gradeHexToRgba, gradeToMapColor } from "../lib/rating-colors";
+import { PARTICIPANT_ACCENT_HEX } from "../lib/participant-colors";
 
 const MAP_CONTAINER_ID = "fire-prep-map";
 
-const PARTICIPANT_STROKE_WIDTH: maplibregl.DataDrivenPropertyValueSpecification<number> =
-  [
-    "match",
-    ["get", "participantType"],
-    "residential",
-    2.5,
-    "business",
-    3.25,
-    "institution",
-    3.25,
-    "hoa",
-    2.75,
-    "property_manager",
-    3.25,
-    2,
-  ] as maplibregl.DataDrivenPropertyValueSpecification<number>;
+const HIGH_GRADE_LINKS_SOURCE_ID = "high-grade-links";
+const HIGH_GRADE_LINKS_LAYER_ID = "high-grade-links-line";
+
+/** Solid “ring” from box-shadow spread: 24px beyond the dot edge, grade-colored. */
+const ADDRESS_HALO_SPREAD_PX = 24;
+/** Stronger than the map-wide red wash so halos read clearly on top of it. */
+const ADDRESS_HALO_ALPHA = 0.62;
 
 /** Clamp address extents to Ashland study area; expand point-like sets slightly. */
 function clampedBoundsFromAddresses(
@@ -69,52 +60,43 @@ function clampedBoundsFromAddresses(
   ];
 }
 
-/** Larger circles when zoomed in; selected feature gets a bigger radius at each zoom. */
-function circleRadiusPaint(
-  selectedId: string | null,
-): maplibregl.DataDrivenPropertyValueSpecification<number> {
-  const sid = selectedId ?? "";
-  return [
-    "case",
-    ["==", ["get", "id"], sid],
-    [
-      "interpolate",
-      ["linear"],
-      ["zoom"],
-      11,
-      10,
-      14,
-      16,
-      17,
-      22,
-      19,
-      28,
-    ],
-    [
-      "interpolate",
-      ["linear"],
-      ["zoom"],
-      11,
-      4,
-      14,
-      7,
-      17,
-      12,
-      19,
-      16,
-    ],
-  ] as maplibregl.DataDrivenPropertyValueSpecification<number>;
+function buildAddressMarkerElement(
+  a: AddressRecord,
+  selected: boolean,
+): HTMLButtonElement {
+  const fill = gradeToMapColor(a.grade);
+  const ring = PARTICIPANT_ACCENT_HEX[a.participantType];
+  const size = selected ? 22 : 14;
+  const ringW = selected ? 2.5 : 2;
+  const haloRgb = gradeHexToRgba(fill, ADDRESS_HALO_ALPHA);
+  const el = document.createElement("button");
+  el.type = "button";
+  el.setAttribute("aria-label", `${a.label}, preparedness ${a.grade ?? "ungraded"}`);
+  el.style.width = `${size}px`;
+  el.style.height = `${size}px`;
+  el.style.borderRadius = "50%";
+  el.style.background = fill;
+  el.style.border = `${ringW}px solid ${ring}`;
+  el.style.padding = "0";
+  el.style.cursor = "pointer";
+  el.style.boxSizing = "border-box";
+  el.style.display = "block";
+  el.style.overflow = "visible";
+  el.style.boxShadow = `0 0 0 ${ADDRESS_HALO_SPREAD_PX}px ${haloRgb}, 0 1px 3px rgba(0,0,0,0.35)`;
+  return el;
 }
 
 export type FirePrepMapProps = {
-  neighborhoods: FeatureCollection<
-    Polygon | MultiPolygon,
-    { id: string; name: string; rollupColor: string }
-  > | null;
   addresses: AddressRecord[];
   selectedId: string | null;
   onSelectAddress: (id: string | null) => void;
   onSelectNeighborhood: (id: string | null) => void;
+  /** Semi-transparent RGBA wash over the map (A/B city share). */
+  mapWashRgba: string;
+  /** Fired once the map style is ready (for initial fit). */
+  onOverlayReady?: () => void;
+  /** Green segments between A/B sites within 1 km. */
+  showPotentialFireBreakLinks: boolean;
 };
 
 export type FirePrepMapHandle = {
@@ -123,17 +105,29 @@ export type FirePrepMapHandle = {
 
 export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
   function FirePrepMap(
-    { neighborhoods, addresses, selectedId, onSelectAddress, onSelectNeighborhood },
+    {
+      addresses,
+      selectedId,
+      onSelectAddress,
+      onSelectNeighborhood,
+      mapWashRgba,
+      onOverlayReady,
+      showPotentialFireBreakLinks,
+    },
     ref,
   ) {
     const mapRef = useRef<maplibregl.Map | null>(null);
-    const selectedIdRef = useRef(selectedId);
-    selectedIdRef.current = selectedId;
 
     const onSelectAddressRef = useRef(onSelectAddress);
     onSelectAddressRef.current = onSelectAddress;
     const onSelectNeighborhoodRef = useRef(onSelectNeighborhood);
     onSelectNeighborhoodRef.current = onSelectNeighborhood;
+    const onOverlayReadyRef = useRef(onOverlayReady);
+    onOverlayReadyRef.current = onOverlayReady;
+    const addressesRef = useRef(addresses);
+    addressesRef.current = addresses;
+    const showFireBreakLinksRef = useRef(showPotentialFireBreakLinks);
+    showFireBreakLinksRef.current = showPotentialFireBreakLinks;
 
     useImperativeHandle(
       ref,
@@ -158,7 +152,7 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
         style: buildOvertureStyle(),
         bounds: ASHLAND_BBOX,
         fitBoundsOptions: { padding: 36, duration: 0 },
-        minZoom: 10,
+        minZoom: 8,
         maxZoom: 19,
         attributionControl: false,
       });
@@ -181,90 +175,37 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
         "bottom-right",
       );
 
-      map.on("load", () => {
-        map.addSource("neighborhoods", {
+      const onStyleReady = () => {
+        map.on("click", () => {
+          onSelectAddressRef.current(null);
+          onSelectNeighborhoodRef.current(null);
+        });
+        map.addSource(HIGH_GRADE_LINKS_SOURCE_ID, {
           type: "geojson",
-          data: { type: "FeatureCollection", features: [] },
+          data: buildHighGradeProximityLinks(addressesRef.current),
         });
         map.addLayer({
-          id: "neighborhoods-fill",
-          type: "fill",
-          source: "neighborhoods",
-          paint: {
-            "fill-color": ["get", "rollupColor"],
-            "fill-opacity": 0.28,
-          },
-        });
-        map.addLayer({
-          id: "neighborhoods-outline",
+          id: HIGH_GRADE_LINKS_LAYER_ID,
           type: "line",
-          source: "neighborhoods",
+          source: HIGH_GRADE_LINKS_SOURCE_ID,
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+            visibility: showFireBreakLinksRef.current ? "visible" : "none",
+          },
           paint: {
-            "line-color": "#1e293b",
-            "line-width": 2,
-            "line-opacity": 0.65,
+            "line-color": "#22c55e",
+            "line-width": 5,
+            "line-opacity": 0.9,
           },
         });
-
-        map.addSource("addresses", {
-          type: "geojson",
-          data: addressesToFeatureCollection([]),
-        });
-        map.addLayer({
-          id: "addresses-circle",
-          type: "circle",
-          source: "addresses",
-          paint: {
-            "circle-radius": circleRadiusPaint(selectedIdRef.current),
-            "circle-color": ["get", "gradeColor"],
-            "circle-stroke-width": PARTICIPANT_STROKE_WIDTH,
-            "circle-stroke-color": ["get", "participantStroke"],
-          },
-        });
-
-        map.on("click", "addresses-circle", (e) => {
-          const f = e.features?.[0];
-          const id = f?.properties?.id as string | undefined;
-          if (id) {
-            onSelectAddressRef.current(id);
-            onSelectNeighborhoodRef.current(null);
-          }
-        });
-
-        map.on("click", "neighborhoods-fill", (e) => {
-          const f = e.features?.[0];
-          const id = f?.properties?.id as string | undefined;
-          if (id) {
-            onSelectNeighborhoodRef.current(id);
-            onSelectAddressRef.current(null);
-          }
-        });
-
-        map.on("click", (e) => {
-          const hits = map.queryRenderedFeatures(e.point, {
-            layers: ["addresses-circle", "neighborhoods-fill"],
-          });
-          if (hits.length === 0) {
-            onSelectAddressRef.current(null);
-            onSelectNeighborhoodRef.current(null);
-          }
-        });
-
-        map.on("mouseenter", "addresses-circle", () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", "addresses-circle", () => {
-          map.getCanvas().style.cursor = "";
-        });
-        map.on("mouseenter", "neighborhoods-fill", () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", "neighborhoods-fill", () => {
-          map.getCanvas().style.cursor = "";
-        });
-      });
+        queueMicrotask(() => onOverlayReadyRef.current?.());
+      };
 
       mapRef.current = map;
+
+      if (map.isStyleLoaded()) onStyleReady();
+      else map.once("load", onStyleReady);
 
       return () => {
         map.remove();
@@ -273,42 +214,69 @@ export const FirePrepMap = forwardRef<FirePrepMapHandle, FirePrepMapProps>(
       };
     }, []);
 
-    const refreshLayers = useCallback(() => {
+    useEffect(() => {
       const map = mapRef.current;
       if (!map?.isStyleLoaded()) return;
-
-      const nSrc = map.getSource("neighborhoods") as maplibregl.GeoJSONSource;
-      const aSrc = map.getSource("addresses") as maplibregl.GeoJSONSource;
-      if (nSrc && neighborhoods) nSrc.setData(neighborhoods);
-      if (aSrc) {
-        aSrc.setData(addressesToFeatureCollection(addresses));
-        if (map.getLayer("addresses-circle")) {
-          map.setPaintProperty(
-            "addresses-circle",
-            "circle-radius",
-            circleRadiusPaint(selectedId),
-          );
-        }
+      const src = map.getSource(HIGH_GRADE_LINKS_SOURCE_ID);
+      if (src && "setData" in src) {
+        (src as maplibregl.GeoJSONSource).setData(
+          buildHighGradeProximityLinks(addresses),
+        );
       }
-    }, [neighborhoods, addresses, selectedId]);
+    }, [addresses]);
 
     useEffect(() => {
-      if (!mapRef.current) return;
       const map = mapRef.current;
-      if (map.isStyleLoaded()) {
-        refreshLayers();
+      if (!map?.isStyleLoaded() || !map.getLayer(HIGH_GRADE_LINKS_LAYER_ID))
         return;
+      map.setLayoutProperty(
+        HIGH_GRADE_LINKS_LAYER_ID,
+        "visibility",
+        showPotentialFireBreakLinks ? "visible" : "none",
+      );
+    }, [showPotentialFireBreakLinks]);
+
+    /** DOM markers sit above the WebGL canvas for reliable visibility. */
+    useEffect(() => {
+      const map = mapRef.current;
+      if (!map) return;
+
+      const markers: maplibregl.Marker[] = [];
+
+      for (const a of addresses) {
+        const selected = a.id === selectedId;
+        const el = buildAddressMarkerElement(a, selected);
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          onSelectAddressRef.current(a.id);
+          onSelectNeighborhoodRef.current(null);
+        });
+
+        const marker = new maplibregl.Marker({ element: el, anchor: "center" })
+          .setLngLat([a.lng, a.lat])
+          .addTo(map);
+        markers.push(marker);
       }
-      map.once("load", refreshLayers);
-    }, [refreshLayers]);
+
+      return () => {
+        for (const m of markers) m.remove();
+      };
+    }, [addresses, selectedId]);
 
     return (
-      <div
-        id={MAP_CONTAINER_ID}
-        className="h-full w-full min-h-[320px] rounded-lg border border-[var(--color-border)]"
-        role="application"
-        aria-label="Interactive map of Ashland with preparedness ratings"
-      />
+      <div className="relative h-full w-full min-h-[420px] rounded-lg border border-[var(--color-border)]">
+        <div
+          id={MAP_CONTAINER_ID}
+          className="h-full w-full min-h-[420px] rounded-[inherit]"
+          role="application"
+          aria-label="Interactive map of Ashland with preparedness ratings"
+        />
+        <div
+          className="pointer-events-none absolute inset-0 z-10 rounded-[inherit]"
+          style={{ backgroundColor: mapWashRgba }}
+          aria-hidden
+        />
+      </div>
     );
   },
 );
